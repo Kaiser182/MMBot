@@ -69,7 +69,7 @@ class Strategy(StrategyBase):
         self.error_onMarketUpdate = self.error
         self.error_onAccount = self.error
         """ Define what strategy does on the following events
-           - Bitshares account has been modified = self.onAccount
+           - Birake account has been modified = self.onAccount
            - Market has been updated = self.onMarketUpdate
 
            These events are tied to methods which decide how the loop goes, unless the strategy is static, which

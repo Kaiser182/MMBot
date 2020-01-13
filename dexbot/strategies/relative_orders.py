@@ -49,7 +49,7 @@ class Strategy(StrategyBase):
             self.external_market_center_price = self.get_external_market_center_price(self.external_price_source)
 
         if not self.market_center_price:
-            # Bitshares has no center price making it an empty market or one that has only one sided orders
+            # Birake has no center price making it an empty market or one that has only one sided orders
             self.empty_market = True
 
         # Worker parameters

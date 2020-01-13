@@ -370,7 +370,7 @@ def configure_dexbot(config, ctx):
             elif action == 'SHOW':
                 account_list = list_accounts(bitshares_instance)
                 if account_list:
-                    action = whiptail.menu("Bitshares Account List (Name - Type)", account_list)
+                    action = whiptail.menu("Birake Account List (Name - Type)", account_list)
                 else:
                     whiptail.alert('You do not have any bitshares accounts in the wallet')
             elif action == 'ADD_NODE':

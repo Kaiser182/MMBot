@@ -6,7 +6,7 @@ from bitshares.price import Order
 
 
 class BitsharesPriceFeed:
-    """ This Price Feed class enables usage of Bitshares DEX for market center and order
+    """ This Price Feed class enables usage of Birake DEX for market center and order
         book pricing, without requiring a registered account. It may be used for both
         strategy and indicator analysis tools.
 

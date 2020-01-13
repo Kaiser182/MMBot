@@ -18,7 +18,7 @@ class RelativeConfig(BaseConfig):
         """
         # External exchanges used to calculate center price
         EXCHANGES = [
-            # ('none', 'None. Use Manual or Bitshares DEX Price (default)'),
+            # ('none', 'None. Use Manual or Birake DEX Price (default)'),
             ('gecko', 'Coingecko'),
             ('waves', 'Waves DEX'),
             ('kraken', 'Kraken'),

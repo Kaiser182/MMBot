@@ -149,7 +149,7 @@ class StrategyBase(BitsharesOrderEngine, BitsharesPriceFeed):
         self.operational_percent_quote = self.worker.get('operational_percent_quote', 0) / 100
         self.operational_percent_base = self.worker.get('operational_percent_base', 0) / 100
 
-        # Get Bitshares account and market for this worker
+        # Get Birake account and market for this worker
         self._account = Account(self.worker["account"], full=True, bitshares_instance=self.bitshares)
         self._market = Market(config["workers"][name]["market"], bitshares_instance=self.bitshares)
 

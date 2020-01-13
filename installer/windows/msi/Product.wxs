@@ -27,7 +27,7 @@
           <Shortcut
               Id="ApplicationDesktopShortcut"
               Name="DEXBot"
-              Description="Bitshares DEXBot"
+              Description="Birake DEXBot"
               Target="[INSTALLDIR]\DEXBot.exe"
               WorkingDirectory="INSTALLDIR" Icon="ProductIcon">
             <Icon Id="ProductIcon" SourceFile="assets\dexbot-icon.ico" />
@@ -63,7 +63,7 @@
       <Component Id="ApplicationShortcut" Guid="1BFD9CC9-8208-49C1-AB8D-3DC2B7877792">
         <Shortcut Id="ApplicationStartMenuShortcut"
                   Name="DEXBot"
-                  Description="Bitshares DEXBot"
+                  Description="Birake DEXBot"
                   Target="[INSTALLDIR]\DEXBot.exe"
                   WorkingDirectory="INSTALLDIR"/>
         <RemoveFolder Id="CleanUpShortCut" Directory="ApplicationProgramsFolder" On="uninstall"/>

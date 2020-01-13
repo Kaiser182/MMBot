@@ -100,7 +100,7 @@ class MainController:
     def measure_latency(nodes):
         """ Measures latency of first alive node from given nodes in milliseconds
 
-            :param str,list nodes: Bitshares node address(-es)
+            :param str,list nodes: Birake node address(-es)
             :return: int: latency in milliseconds
             :raises grapheneapi.exceptions.NumRetriesReached: if failed to find a working node
         """
