@@ -162,7 +162,7 @@ class StrategyBase(BitsharesOrderEngine, BitsharesPriceFeed):
             except bitshares.exceptions.AssetDoesNotExistsException:
                 self.fee_asset = Asset('1.3.0', bitshares_instance=self.bitshares)
         else:
-            # If there is no fee asset, use BTS
+            # If there is no fee asset, use BIR
             self.fee_asset = Asset('1.3.0', bitshares_instance=self.bitshares)
 
         # CER cache

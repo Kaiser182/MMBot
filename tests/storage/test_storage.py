@@ -7,7 +7,7 @@ log.setLevel(logging.DEBUG)
 
 @pytest.mark.mandatory
 def test_fetch_orders(storage):
-    order = {'id': '111', 'base': '10 CNY', 'quote': '1 BTS'}
+    order = {'id': '111', 'base': '10 CNY', 'quote': '1 BIR'}
     storage.save_order(order)
     fetched = storage.fetch_orders()
     # Return value is dict {'id': 'order'}
@@ -16,7 +16,7 @@ def test_fetch_orders(storage):
 
 @pytest.mark.mandatory
 def test_fetch_orders_extended(storage):
-    order = {'id': '111', 'base': '10 CNY', 'quote': '1 BTS'}
+    order = {'id': '111', 'base': '10 CNY', 'quote': '1 BIR'}
     text = 'foo bar'
     storage.save_order_extended(order, virtual=True, custom=text)
 
@@ -39,7 +39,7 @@ def test_fetch_orders_extended(storage):
 
 @pytest.mark.mandatory
 def test_clear_orders(storage):
-    order = {'id': '111', 'base': '10 CNY', 'quote': '1 BTS'}
+    order = {'id': '111', 'base': '10 CNY', 'quote': '1 BIR'}
     storage.save_order(order)
     storage.clear_orders()
     fetched = storage.fetch_orders()
@@ -48,7 +48,7 @@ def test_clear_orders(storage):
 
 @pytest.mark.mandatory
 def test_clear_orders_extended(storage):
-    order = {'id': '111', 'base': '10 CNY', 'quote': '1 BTS'}
+    order = {'id': '111', 'base': '10 CNY', 'quote': '1 BIR'}
     storage.save_order_extended(order, virtual=True)
     storage.clear_orders_extended(only_virtual=True)
     fetched = storage.fetch_orders_extended()
@@ -62,7 +62,7 @@ def test_clear_orders_extended(storage):
 
 @pytest.mark.mandatory
 def test_remove_order(storage):
-    order = {'id': '111', 'base': '10 CNY', 'quote': '1 BTS'}
+    order = {'id': '111', 'base': '10 CNY', 'quote': '1 BIR'}
     storage.save_order(order)
     storage.remove_order(order)
     assert storage.fetch_orders() is None
@@ -70,7 +70,7 @@ def test_remove_order(storage):
 
 @pytest.mark.mandatory
 def test_remove_order_by_id(storage):
-    order = {'id': '111', 'base': '10 CNY', 'quote': '1 BTS'}
+    order = {'id': '111', 'base': '10 CNY', 'quote': '1 BIR'}
     storage.save_order(order)
     storage.remove_order(order['id'])
     assert storage.fetch_orders() is None

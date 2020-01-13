@@ -541,8 +541,8 @@ class Strategy(StrategyBase):
             :param float | manual_offset:
             :return: Center price with manual offset
 
-            Adjust center price by given percent in symmetrical way. Thus, -1% adjustement on BTS:USD market will be
-            same as adjusting +1% on USD:BTS market.
+            Adjust center price by given percent in symmetrical way. Thus, -1% adjustement on BIR:USD market will be
+            same as adjusting +1% on USD:BIR market.
         """
         if manual_offset < 0:
             return center_price / (1 + abs(manual_offset))

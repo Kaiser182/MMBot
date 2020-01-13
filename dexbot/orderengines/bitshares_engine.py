@@ -393,7 +393,7 @@ class BitsharesOrderEngine(Storage, Events):
     def get_order_creation_fee(self, fee_asset):
         """ Returns the cost of creating an order in the asset specified
 
-            :param fee_asset: QUOTE, BASE, BTS, or any other
+            :param fee_asset: QUOTE, BASE, BIR, or any other
             :return:
         """
         # Get fee
@@ -787,9 +787,9 @@ class BitsharesOrderEngine(Storage, Events):
         return truncate((from_value * latest_price), precision)
 
     def convert_fee(self, fee_amount, fee_asset):
-        """ Convert fee amount in BTS to fee in fee_asset
+        """ Convert fee amount in BIR to fee in fee_asset
 
-            :param float | fee_amount: fee amount paid in BTS
+            :param float | fee_amount: fee amount paid in BIR
             :param Asset | fee_asset: fee asset to pay fee in
             :return: float | amount of fee_asset to pay fee
         """
@@ -797,7 +797,7 @@ class BitsharesOrderEngine(Storage, Events):
             fee_asset = Asset(fee_asset, bitshares_instance=self.bitshares)
 
         if fee_asset['id'] == '1.3.0':
-            # Fee asset is BTS, so no further calculations are needed
+            # Fee asset is BIR, so no further calculations are needed
             return fee_amount
         else:
             if not self.core_exchange_rate:
