@@ -17,7 +17,7 @@ The config.yml file
 
 .. code-block:: yaml
 
-    # The BitShares endpoint to talk to
+    # The Birake endpoint to talk to
     node: "wss://node.testnet.bitshares.eu"
 
     # List of bots

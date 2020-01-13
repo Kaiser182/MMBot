@@ -53,7 +53,7 @@ bot's account into a local wallet. This can be done using
 
    uptick addkey
 
-You can get your private key from the BitShares Web Wallet: click the menu on the top right,
+You can get your private key from the Birake Web Wallet: click the menu on the top right,
 then "Settings", "Accounts", "View keys", then tab "Owner Permissions", click 
 on the public key, then "Show". 
 

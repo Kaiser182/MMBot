@@ -70,6 +70,7 @@ data_*.json
 .env
 
 bitshares
+python-bitshares
 bitsharesapi
 uptick
 deprecated

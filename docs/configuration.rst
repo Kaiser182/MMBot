@@ -6,12 +6,12 @@ The configuration consists of a series of questions about the bots you wish to c
 
 1. The Bot Name.
       
-   Choose a unique name for your bot, DEXBot doesn't care what you call it.
+   Choose a unique name for your bot, MMBot doesn't care what you call it.
    It is used to identify the bot in the logs so should be fairly short.
 
 2. The Bot Strategy
       
-   DEXBot provides a number of different bot strategies. They can be quite different in
+   MMBot provides a number of different bot strategies. They can be quite different in
    how they behave (i.e. spend *your* money) so it is important you understand the strategy
    before deploying a bot.
 
@@ -34,14 +34,14 @@ The configuration consists of a series of questions about the bots you wish to c
    b. The Market.
       
       This is the main market the bot trade on. They are specified by the quote asset, a colon (:), and the base asset, for example
-      the market for BitShares priced in US dollars is called BTS:USD. BitShares always provides a "reverse" market so
+      the market for Birake priced in US dollars is called BTS:USD. Birake always provides a "reverse" market so
       there will be a USD:BTS with the same trades, the only difference is the prices will be the inverse (1/x) of BTS:USD.
 
 4. the Node.
 
-   DEXBot needs to have a public node (also called "witness") that gives access to the BitShares blockchain.
+   MMBot needs to have a public node (also called "witness") that gives access to the Birake blockchain.
 
-   DEXBot uses ``wss://status200.bitshares.apasia.tech/ws`` as its default node
+   MMBot uses ``wss://status200.bitshares.apasia.tech/ws`` as its default node
    If you run your own witness node then you can edit ``config.yml`` to change the node value.
 
 5. Systemd.

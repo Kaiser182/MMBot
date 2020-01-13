@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 #
-# DEXBot documentation build configuration file, created by
+# MMBot documentation build configuration file, created by
 # sphinx-quickstart on Fri May 27 11:21:25 2016.
 #
 # This file is execfile()d with the current directory set to its
@@ -59,7 +59,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'DEXBot'
-copyright = '2017-2019, DEXBot Team and contributors'
+copyright = '2017-2019, MMBot Team and contributors'
 author = 'DEXBot Team'
 
 # The version info for the project you're documenting, acts as replacement for

@@ -10,7 +10,7 @@ from bitsharesbase.account import PrivateKey
 class ConfigValidator:
     """ Config validation methods
 
-        :param bitshares.BitShares: BitShares instance
+        :param bitshares.BitShares: Birake instance
     """
 
     def __init__(self, bitshares_instance):

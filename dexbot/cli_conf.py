@@ -208,7 +208,7 @@ def configure_worker(whiptail, worker_config, bitshares_instance):
 
         :param whiptail.Whiptail whiptail: instance of Whiptail or NoWhiptail
         :param collections.OrderedDict worker_config: the config dictionary for this worker
-        :param bitshares.BitShares bitshares_instance: an instance of BitShares class
+        :param bitshares.BitShares bitshares_instance: an instance of Birake class
     """
     # By default always editing
     editing = True
@@ -409,7 +409,7 @@ def add_account(whiptail, bitshares_instance):
     """ "Add account" dialog
 
         :param whiptail.Whiptail whiptail: instance of Whiptail or NoWhiptail
-        :param bitshares.BitShares bitshares_instance: an instance of BitShares class
+        :param bitshares.BitShares bitshares_instance: an instance of Birake class
         :return str: user-supplied account name
     """
     validator = ConfigValidator(bitshares_instance)
@@ -439,7 +439,7 @@ def del_account(whiptail, bitshares_instance):
     """ Delete account from the wallet
 
         :param whiptail.Whiptail whiptail: instance of Whiptail or NoWhiptail
-        :param bitshares.BitShares bitshares_instance: an instance of BitShares class
+        :param bitshares.BitShares bitshares_instance: an instance of Birake class
     """
     account = whiptail.prompt("Account Name")
     wallet = bitshares_instance.wallet

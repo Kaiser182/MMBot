@@ -8,11 +8,11 @@ Status](https://readthedocs.org/projects/dexbot/badge/?version=latest)](https://
 
 The Dashboard of the GUI version of DEXBot: ![GUI](https://i.imgur.com/rW8XKQ4.png)
 
-The CLI version of DEXBot in configuration dialog: ![CLI](https://i.imgur.com/H1N96nI.png)
+The CLI version of MMBot in configuration dialog: ![CLI](https://i.imgur.com/H1N96nI.png)
 
-A Trading Bot provided with two very flexible Market Making strategies. Works on "vanilla" BitShares and all exchanges built upon it. Can be customized with additional strategies written in Python3.
+A Trading Bot provided with two very flexible Market Making strategies. Works on "vanilla" Birake and all exchanges built upon it. Can be customized with additional strategies written in Python3.
 
-DEXBot was paid for by the BitShares blockchain (by means of a Worker Proposal), and managed by "The Cabinet", consisting of 6 active BitShares community members. All spending was controlled by an account which requires 3/5 approvals (multisig scheme).
+DEXBot was paid for by the Birake blockchain (by means of a Worker Proposal), and managed by "The Cabinet", consisting of 6 active Birake community members. All spending was controlled by an account which requires 3/5 approvals (multisig scheme).
 
 DEXBot can be installed from source or by using the excecutable packages for Windows, OSX, and Linux. Packages include the GUI version, but installation from source provides also the CLI version, which can be used on headless servers and Raspberry Pi's.
 

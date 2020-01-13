@@ -25,7 +25,7 @@ class BitsharesPriceFeed:
 
         # Count of orders to be fetched from the API
         self.fetch_depth = 8
-        # BitShares instance
+        # Birake instance
         self.bitshares = bitshares_instance or shared_bitshares_instance()
 
         self.log = logging.LoggerAdapter(

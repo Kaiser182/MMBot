@@ -85,7 +85,7 @@ def bitshares_testnet(session_id, unused_port, docker_manager):
 
 @pytest.fixture(scope='session')
 def bitshares_instance(bitshares_testnet):
-    """ Initialize BitShares instance connected to a local testnet
+    """ Initialize Birake instance connected to a local testnet
     """
     bitshares = BitShares(
         node='ws://127.0.0.1:{}'.format(bitshares_testnet.service_port), keys=PRIVATE_KEYS, num_retries=10
@@ -109,7 +109,7 @@ def claim_balance(bitshares_instance):
 
 @pytest.fixture(scope='session')
 def bitshares(bitshares_instance, claim_balance):
-    """ Prepare the testnet and return BitShares instance
+    """ Prepare the testnet and return Birake instance
     """
     return bitshares_instance
 

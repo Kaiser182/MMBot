@@ -34,7 +34,7 @@ class BitsharesOrderEngine(Storage, Events):
 
         OrderEngine inherits:
             * :class:`dexbot.storage.Storage` : Stores data to sqlite database
-            * ``Events`` :The websocket endpoint of BitShares has notifications that are subscribed to
+            * ``Events`` :The websocket endpoint of Birake has notifications that are subscribed to
                             and dispatched by dexbot. This uses python's native Events
 
     """
@@ -50,7 +50,7 @@ class BitsharesOrderEngine(Storage, Events):
                  *args,
                  **kwargs):
 
-        # BitShares instance
+        # Birake instance
         self.bitshares = bitshares_instance or shared_bitshares_instance()
 
         # Dex instance used to get different fees for the market
@@ -658,7 +658,7 @@ class BitsharesOrderEngine(Storage, Events):
                         tries += 1
                         self.log.warning("retrying on '{}'".format(str(exception)))
                         self.bitshares.txbuffer.clear()
-                        time.sleep(6)  # Wait at least a BitShares block
+                        time.sleep(6)  # Wait at least a Birake block
                 elif "trx.expiration <= now + chain_parameters.maximum_time_until_expiration" in str(exception):
                     if tries > MAX_TRIES:
                         info = self.bitshares.info()

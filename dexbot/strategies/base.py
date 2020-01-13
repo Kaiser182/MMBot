@@ -104,7 +104,7 @@ class StrategyBase(BitsharesOrderEngine, BitsharesPriceFeed):
                  *args,
                  **kwargs):
 
-        # BitShares instance
+        # Birake instance
         self.bitshares = bitshares_instance or shared_bitshares_instance()
 
         # Storage
