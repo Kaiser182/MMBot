@@ -181,7 +181,7 @@
             </size>
            </property>
            <property name="text">
-            <string>Private Active Key</string>
+            <string>Account Password</string>
            </property>
            <property name="wordWrap">
             <bool>true</bool>
@@ -209,7 +209,7 @@
             <cursorShape>WhatsThisCursor</cursorShape>
            </property>
            <property name="toolTip">
-            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Active private key of the account in WIF format.&lt;/p&gt;&lt;p&gt;This field is optional if it was previously saved.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Account password from trading platform.&lt;/p&gt;&lt;p&gt;This field is optional if it was previously saved.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
            </property>
            <property name="text">
             <string>?</string>
