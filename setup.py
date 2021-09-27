@@ -29,7 +29,7 @@ except BaseException as e:
 setup(
     name=APP_NAME,
     version=VERSION,
-    description='Trading bot for the DEX (BitShares)',
+    description='Trading bot for the DEX (Birake)',
     long_description=open('README.md').read(),
     author='Codaone Oy',
     author_email='support@codaone.com',
