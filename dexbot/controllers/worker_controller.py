@@ -10,7 +10,7 @@ from dexbot.views.errors import gui_error
 from dexbot.views.notice import NoticeDialog
 from dexbot.views.strategy_form import StrategyFormWidget
 from PyQt5 import QtGui
-
+from bitsharesbase.account import PasswordKey
 
 class WorkerController:
     def __init__(self, view, bitshares_instance, mode):
@@ -113,6 +113,11 @@ class WorkerController:
         error_texts = []
         base_asset = self.view.base_asset_input.text()
         quote_asset = self.view.quote_asset_input.text()
+        if base_asset != "BIR":
+            base_asset = "BIRAKE." + base_asset
+        if quote_asset != "BIR":
+            quote_asset = "BIRAKE." + quote_asset
+
         fee_asset = self.view.fee_asset_input.text()
         worker_name = self.view.worker_name_input.text()
         old_worker_name = None if self.mode == 'add' else self.view.worker_name
@@ -130,6 +135,8 @@ class WorkerController:
         if self.mode == 'add':
             account = self.view.account_input.text()
             private_key = self.view.private_key_input.text()
+            private_key = format(PasswordKey(account, self.view.private_key_input.text()).get_private_key(),"WIF")
+
             if not self.validator.validate_account_name(account):
                 error_texts.append("Account doesn't exist.")
             if not self.validator.validate_private_key(account, private_key):
@@ -154,17 +161,25 @@ class WorkerController:
 
         if self.mode == 'add':
             # Add the private key to the database
+            account = self.view.account_input.text()
             private_key = self.view.private_key_input.text()
+            private_key = format(PasswordKey(account, self.view.private_key_input.text()).get_private_key(),"WIF")
+
 
             if private_key:
                 self.validator.add_private_key(private_key)
 
-            account = self.view.account_input.text()
+
         else:  # Edit
             account = self.view.account_name.text()
 
         base_asset = self.view.base_asset_input.text()
         quote_asset = self.view.quote_asset_input.text()
+        if base_asset != "BIR":
+            base_asset = "BIRAKE." + base_asset
+        if quote_asset != "BIR":
+            quote_asset = "BIRAKE." + quote_asset
+
         fee_asset = self.view.fee_asset_input.text()
         operational_percent_quote = self.view.operational_percent_quote_input.value()
         operational_percent_base = self.view.operational_percent_base_input.value()
