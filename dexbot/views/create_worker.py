@@ -28,6 +28,7 @@ class CreateWorkerView(QtWidgets.QDialog, Ui_Dialog):
         self.base_asset_input.setValidator(validator)
         self.quote_asset_input.setValidator(validator)
         self.fee_asset_input.setValidator(validator)
+        self.fee_asset_input.setVisible(False)
 
         # Set signals
         self.strategy_input.currentTextChanged.connect(lambda: controller.change_strategy_form())
