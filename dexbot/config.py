@@ -1,20 +1,17 @@
 import os
 import pathlib
-
-from dexbot import APP_NAME, AUTHOR
-from dexbot.node_manager import get_sorted_nodelist
-
+from collections import OrderedDict, defaultdict
 
 import appdirs
+from dexbot import APP_NAME, AUTHOR
+from dexbot.node_manager import get_sorted_nodelist
 from ruamel import yaml
-from collections import OrderedDict, defaultdict
 
 DEFAULT_CONFIG_DIR = appdirs.user_config_dir(APP_NAME, appauthor=AUTHOR)
 DEFAULT_CONFIG_FILE = os.path.join(DEFAULT_CONFIG_DIR, 'config.yml')
 
 
 class Config(dict):
-
     def __init__(self, config=None, path=None):
         """ Creates or loads the config file based on if it exists.
             :param dict config: data used to create the config file
@@ -165,9 +162,7 @@ class Config(dict):
             mapping_loader.flatten_mapping(node)
             return object_pairs_hook(mapping_loader.construct_pairs(node))
 
-        OrderedLoader.add_constructor(
-            yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG,
-            construct_mapping)
+        OrderedLoader.add_constructor(yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, construct_mapping)
         return yaml.load(stream, OrderedLoader)
 
     @staticmethod
@@ -177,7 +172,7 @@ class Config(dict):
             :return: defaultdict instance representing dict with intersections
 
             The goal of calculating assets intersections is to be able to use single account on multiple workers and
-            trade some common assets. For example, trade BIR/USD, BTC/BIR, ETH/BTC markets on same account.
+            trade some common assets. For example, trade BTS/USD, BTC/BTS, ETH/BTC markets on same account.
 
             Configuration variable `operational_percent_xxx` defines what percent of total account balance should be
             available for the worker. It may be set or omitted.
@@ -187,13 +182,17 @@ class Config(dict):
             example, 3 workers with 30% 30% 30%, and 2 workers with 0. These 2 workers will take the remaining `(100 -
             3*30) / 2 = 5`.
 
-            Example return as a dict:
-            {'foo': {'RUBLE': {'sum_pct': 0, 'zero_workers': 0},
-                     'USD': {'sum_pct': 0, 'zero_workers': 0},
-                     'CNY': {'sum_pct': 0, 'zero_workers': 0}
-                     }
+            Example return as a dict
+
+            .. code-block:: python
+
+                {'foo': {'RUBLE': {'sum_pct': 0, 'zero_workers': 0},
+                         'USD': {'sum_pct': 0, 'zero_workers': 0},
+                         'CNY': {'sum_pct': 0, 'zero_workers': 0}
+                         }
                 }
         """
+
         def update_data(asset, operational_percent):
             if isinstance(data[account][asset]['sum_pct'], float):
                 # Existing dict key
@@ -210,8 +209,7 @@ class Config(dict):
                     data[account][asset]['num_zero_workers'] = 1
 
             if data[account][asset]['sum_pct'] > 1:
-                raise ValueError('Operational percent for asset {} is more than 100%'
-                                 .format(asset))
+                raise ValueError('Operational percent for asset {} is more than 100%'.format(asset))
 
         def tree():
             return defaultdict(tree)
@@ -231,7 +229,8 @@ class Config(dict):
 
     @property
     def node_list(self):
-        """ A pre-defined list of Birake nodes. """
+        """ A pre-defined list of Bitshares nodes. """
         return [
             "wss://node.birake.com"
+
         ]

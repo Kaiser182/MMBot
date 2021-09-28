@@ -1,25 +1,21 @@
-import datetime
 import copy
+import datetime
 import logging
 import time
-
-from dexbot.config import Config
-from dexbot.storage import Storage
-from dexbot.helper import truncate
 
 import bitshares.exceptions
 import bitsharesapi
 import bitsharesapi.exceptions
-
 from bitshares.amount import Amount, Asset
 from bitshares.dex import Dex
 from bitshares.instance import shared_bitshares_instance
 from bitshares.market import Market
 from bitshares.price import FilledOrder, Order, UpdateCallOrder
 from bitshares.utils import formatTime
-
+from dexbot.config import Config
+from dexbot.helper import truncate
+from dexbot.storage import Storage
 from events import Events
-
 
 # Number of maximum retries used to retry action before failing
 MAX_TRIES = 3
@@ -39,16 +35,18 @@ class BitsharesOrderEngine(Storage, Events):
 
     """
 
-    def __init__(self,
-                 name,
-                 config=None,
-                 _account=None,
-                 _market=None,
-                 fee_asset_symbol=None,
-                 bitshares_instance=None,
-                 bitshares_bundle=None,
-                 *args,
-                 **kwargs):
+    def __init__(
+        self,
+        name,
+        config=None,
+        _account=None,
+        _market=None,
+        fee_asset_symbol=None,
+        bitshares_instance=None,
+        bitshares_bundle=None,
+        *args,
+        **kwargs
+    ):
 
         # Birake instance
         self.bitshares = bitshares_instance or shared_bitshares_instance()
@@ -113,10 +111,7 @@ class BitsharesOrderEngine(Storage, Events):
 
     def _cancel_orders(self, orders):
         try:
-            self.retry_action(
-                self.bitshares.cancel,
-                orders, account=self._account, fee_asset=self.fee_asset['id']
-            )
+            self.retry_action(self.bitshares.cancel, orders, account=self._account, fee_asset=self.fee_asset['id'])
         except bitsharesapi.exceptions.UnhandledRPCError as exception:
             if str(exception).startswith('Assert Exception: maybe_found != nullptr: Unable to find Object'):
                 # The order(s) we tried to cancel doesn't exist
@@ -157,9 +152,7 @@ class BitsharesOrderEngine(Storage, Events):
                 total_value += updated_order['base']['amount']
             else:
                 total_value += self.convert_asset(
-                    updated_order['base']['amount'],
-                    updated_order['base']['symbol'],
-                    return_asset
+                    updated_order['base']['amount'], updated_order['base']['symbol'], return_asset
                 )
 
         return total_value
@@ -178,12 +171,22 @@ class BitsharesOrderEngine(Storage, Events):
 
         return balance
 
-    def calculate_order_data(self, order, amount, price):
+    def calculate_order_data(self, order_type, order, amount, price):
+        """ Reconstructs order data using price and amount
+        """
         quote_asset = Amount(amount, self._market['quote']['symbol'], bitshares_instance=self.bitshares)
-        order['quote'] = quote_asset
-        order['price'] = price
         base_asset = Amount(amount * price, self._market['base']['symbol'], bitshares_instance=self.bitshares)
-        order['base'] = base_asset
+        if order_type == 'buy':
+            order['quote'] = quote_asset
+            order['price'] = price
+            order['base'] = base_asset
+        elif order_type == 'sell':
+            order['quote'] = base_asset
+            order['price'] = price ** -1
+            order['base'] = quote_asset
+        else:
+            raise ValueError('Invalid order_type')
+
         return order
 
     def calculate_worker_value(self, unit_of_measure):
@@ -233,8 +236,11 @@ class BitsharesOrderEngine(Storage, Events):
             self.log.info('Canceling all account orders')
             orders_to_cancel = self.all_own_orders
         else:
-            self.log.info('Canceling all orders on market {}/{}'
-                          .format(self.market['quote']['symbol'], self.market['base']['symbol']))
+            self.log.info(
+                'Canceling all orders on market {}/{}'.format(
+                    self.market['quote']['symbol'], self.market['base']['symbol']
+                )
+            )
             orders_to_cancel = self.own_orders
 
         if orders_to_cancel:
@@ -544,8 +550,9 @@ class BitsharesOrderEngine(Storage, Events):
             self.disabled = True
             return None
 
-        self.log.info('Placing a buy order with {:.{prec}f} {} @ {:.8f}'
-                      .format(base_amount, symbol, price, prec=precision))
+        self.log.info(
+            'Placing a buy order with {:.{prec}f} {} @ {:.8f}'.format(base_amount, symbol, price, prec=precision)
+        )
 
         # Place the order
         buy_transaction = self.retry_action(
@@ -566,7 +573,8 @@ class BitsharesOrderEngine(Storage, Events):
             if buy_order and buy_order['deleted']:
                 # The API doesn't return data on orders that don't exist
                 # We need to calculate the data on our own
-                buy_order = self.calculate_order_data(buy_order, amount, price)
+                buy_order = self.calculate_order_data('buy', buy_order, amount, price)
+                buy_order['id'] = buy_transaction['orderid']
                 self.recheck_orders = True
             return buy_order
         else:
@@ -600,8 +608,9 @@ class BitsharesOrderEngine(Storage, Events):
             self.disabled = True
             return None
 
-        self.log.info('Placing a sell order with {:.{prec}f} {} @ {:.8f}'
-                      .format(quote_amount, symbol, price, prec=precision))
+        self.log.info(
+            'Placing a sell order with {:.{prec}f} {} @ {:.8f}'.format(quote_amount, symbol, price, prec=precision)
+        )
 
         # Place the order
         sell_transaction = self.retry_action(
@@ -621,7 +630,8 @@ class BitsharesOrderEngine(Storage, Events):
             sell_order = self.get_order(sell_transaction['orderid'], return_none=return_none)
             if sell_order and sell_order['deleted']:
                 # The API doesn't return data on orders that don't exist, we need to calculate the data on our own
-                sell_order = self.calculate_order_data(sell_order, amount, price)
+                sell_order = self.calculate_order_data('sell', sell_order, amount, price)
+                sell_order['id'] = sell_transaction['orderid']
                 self.recheck_orders = True
             if sell_order and invert:
                 sell_order.invert()
@@ -640,6 +650,9 @@ class BitsharesOrderEngine(Storage, Events):
         tries = 0
         while True:
             try:
+                ref_block = self.bitshares.txbuffer.get("ref_block_num")
+                ref_block_prefix = self.bitshares.txbuffer.get("ref_block_prefix")
+                self.log.debug('Ref block num: {}, prefix: {}'.format(ref_block, ref_block_prefix))
                 return action(*args, **kwargs)
             except bitsharesapi.exceptions.UnhandledRPCError as exception:
                 if "Assert Exception: amount_to_sell.amount > 0" in str(exception):
@@ -662,18 +675,35 @@ class BitsharesOrderEngine(Storage, Events):
                 elif "trx.expiration <= now + chain_parameters.maximum_time_until_expiration" in str(exception):
                     if tries > MAX_TRIES:
                         info = self.bitshares.info()
-                        raise Exception('Too much difference between node block time and trx expiration, please change '
-                                        'the node. Block time: {}, local time: {}'
-                                        .format(info['time'], formatTime(datetime.datetime.utcnow())))
+                        raise Exception(
+                            'Too much difference between node block time and trx expiration, please change '
+                            'the node. Block time: {}, local time: {}'.format(
+                                info['time'], formatTime(datetime.datetime.utcnow())
+                            )
+                        )
                     else:
                         tries += 1
-                        self.log.warning('Too much difference between node block time and trx expiration, switching '
-                                         'node')
+                        self.log.warning(
+                            'Too much difference between node block time and trx expiration, switching node'
+                        )
                         self.bitshares.txbuffer.clear()
                         self.bitshares.rpc.next()
                 elif "Assert Exception: delta.amount > 0: Insufficient Balance" in str(exception):
                     self.log.critical('Insufficient balance of fee asset')
                     raise
+                elif "trx.ref_block_prefix == tapos_block_summary.block_id._hash" in str(exception):
+                    if tries > MAX_TRIES:
+                        raise
+                    else:
+                        # TODO: move node switch to a function
+                        old = self.bitshares.rpc.url
+                        self.log.warning('Got tapos_block_summary exception, switching node')
+                        self.bitshares.clear()  # reinstantiates txbuilder (it caches ref_block_num)
+                        # TODO: Notify still uses old node, needs to be switched!
+                        self.bitshares.rpc.next()
+                        new = self.bitshares.rpc.url
+                        self.log.info('Old: {}, new: {}'.format(old, new))
+                        tries += 1
                 else:
                     raise
 
@@ -845,7 +875,10 @@ class BitsharesOrderEngine(Storage, Events):
             diff_abs = order['base']['amount'] - order['for_sale']['amount']
             diff_rel = diff_abs / order['base']['amount']
             if diff_rel > threshold:
-                self.log.debug('Partially filled {} order: {} {} @ {:.8f}, filled: {:.2%}'.format(
-                               order_type, order['base']['amount'], order['base']['symbol'], price, diff_rel))
+                self.log.debug(
+                    'Partially filled {} order: {} {} @ {:.8f}, filled: {:.2%}'.format(
+                        order_type, order['base']['amount'], order['base']['symbol'], price, diff_rel
+                    )
+                )
                 return True
         return False

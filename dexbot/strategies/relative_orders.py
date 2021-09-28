@@ -1,6 +1,6 @@
 import math
-from datetime import datetime, timedelta
 
+from dexbot.decorators import check_last_run
 from dexbot.strategies.base import StrategyBase
 from dexbot.strategies.config_parts.relative_config import RelativeConfig
 from dexbot.strategies.external_feeds.price_feed import PriceFeed
@@ -90,8 +90,7 @@ class Strategy(StrategyBase):
             self.expiration = self.default_expiration
             self.ontick -= self.tick  # Save a few cycles there
 
-        self.last_check = datetime.now()
-        self.min_check_interval = 8
+        self.check_interval = 8
 
         self.buy_price = None
         self.sell_price = None
@@ -127,7 +126,7 @@ class Strategy(StrategyBase):
         """ Ticks come in on every block. We need to periodically check orders because cancelled orders
             do not triggers a market_update event
         """
-        if (self.is_reset_on_price_change and not self.counter % 8):
+        if self.is_reset_on_price_change and not self.counter % 8:
             self.log.debug('Checking orders by tick threshold')
             self.check_orders()
         self.counter += 1
@@ -142,8 +141,10 @@ class Strategy(StrategyBase):
             amount = quote_balance * (self.order_size / 100)
 
         # Sell / receive amount should match x2 of minimal possible fraction of asset
-        if (amount < 2 * 10 ** -self.market['quote']['precision'] or
-                amount * self.sell_price < 2 * 10 ** -self.market['base']['precision']):
+        if (
+            amount < 2 * 10 ** -self.market['quote']['precision']
+            or amount * self.sell_price < 2 * 10 ** -self.market['base']['precision']
+        ):
             amount = 0
         return amount
 
@@ -158,8 +159,10 @@ class Strategy(StrategyBase):
             amount = base_balance * (self.order_size / 100) / self.buy_price
 
         # Sell / receive amount should match x2 of minimal possible fraction of asset
-        if (amount < 2 * 10 ** -self.market['quote']['precision'] or
-                amount * self.buy_price < 2 * 10 ** -self.market['base']['precision']):
+        if (
+            amount < 2 * 10 ** -self.market['quote']['precision']
+            or amount * self.buy_price < 2 * 10 ** -self.market['base']['precision']
+        ):
             amount = 0
         return amount
 
@@ -211,19 +214,20 @@ class Strategy(StrategyBase):
                     self.log.warning('Failed to obtain last trade price')
                     try:
                         center_price = self.get_market_center_price()
-                        self.log.info('Using market center price (failed to obtain last trade): {:.8f}'
-                                      .format(center_price))
+                        self.log.info(
+                            'Using market center price (failed to obtain last trade): {:.8f}'.format(center_price)
+                        )
                     except TypeError:
                         self.log.warning('Failed to obtain center price from market')
             elif self.center_price_depth > 0:
                 # Calculate with quote amount if given
                 center_price = self.get_market_center_price(quote_amount=self.center_price_depth)
                 try:
-                    self.log.info('Using market center price: {:.8f} with depth: {:.{prec}f}'.format(
-                        center_price,
-                        self.center_price_depth,
-                        prec=self.market['quote']['precision']
-                    ))
+                    self.log.info(
+                        'Using market center price: {:.8f} with depth: {:.{prec}f}'.format(
+                            center_price, self.center_price_depth, prec=self.market['quote']['precision']
+                        )
+                    )
                 except TypeError:
                     self.log.warning('Failed to obtain depthted center price')
             else:
@@ -234,20 +238,12 @@ class Strategy(StrategyBase):
                     self.log.warning('Failed to obtain center price from market')
 
             self.center_price = self.calculate_center_price(
-                center_price,
-                self.is_asset_offset,
-                spread,
-                self['order_ids'],
-                self.manual_offset
+                center_price, self.is_asset_offset, spread, self['order_ids'], self.manual_offset
             )
         else:
             # User has given center price to use, calculate offsets and spread
             self.center_price = self.calculate_center_price(
-                self.center_price,
-                self.is_asset_offset,
-                spread,
-                self['order_ids'],
-                self.manual_offset
+                self.center_price, self.is_asset_offset, spread, self['order_ids'], self.manual_offset
             )
 
         try:
@@ -461,24 +457,21 @@ class Strategy(StrategyBase):
 
         if highest_bid is None or highest_bid == 0.0:
             if not suppress_errors:
-                self.log.critical(
-                    "Cannot estimate center price, there is no highest bid."
-                )
+                self.log.critical("Cannot estimate center price, there is no highest bid.")
                 self.disabled = True
             return None
         elif lowest_ask is None or lowest_ask == 0.0:
             if not suppress_errors:
-                self.log.critical(
-                    "Cannot estimate center price, there is no lowest ask."
-                )
+                self.log.critical("Cannot estimate center price, there is no lowest ask.")
                 self.disabled = True
             return None
 
         # Calculate center price between two closest orders on the market
         return highest_bid * math.sqrt(lowest_ask / highest_bid)
 
-    def calculate_center_price(self, center_price=None, asset_offset=False, spread=None,
-                               order_ids=None, manual_offset=0, suppress_errors=False):
+    def calculate_center_price(
+        self, center_price=None, asset_offset=False, spread=None, order_ids=None, manual_offset=0, suppress_errors=False
+    ):
         """ Calculate center price which shifts based on available funds
         """
         if center_price is None:
@@ -549,18 +542,12 @@ class Strategy(StrategyBase):
         else:
             return center_price * (1 + manual_offset)
 
+    @check_last_run
     def check_orders(self, *args, **kwargs):
         """ Tests if the orders need updating
         """
-        delta = datetime.now() - self.last_check
-
         # Store current available balance and balance in orders to the database for profit calculation purpose
         self.store_profit_estimation_data()
-
-        # Only allow to check orders whether minimal time passed
-        if delta < timedelta(seconds=self.min_check_interval) and not self.initializing:
-            self.log.debug('Ignoring market_update event as min_check_interval is not passed')
-            return
 
         orders = self.fetch_orders()
 
@@ -605,11 +592,7 @@ class Strategy(StrategyBase):
                 spread = self.get_market_spread(quote_amount=self.market_depth_amount) * self.dynamic_spread_factor
 
             center_price = self.calculate_center_price(
-                None,
-                self.is_asset_offset,
-                spread,
-                self['order_ids'],
-                self.manual_offset
+                None, self.is_asset_offset, spread, self['order_ids'], self.manual_offset
             )
             diff = abs((self.center_price - center_price) / self.center_price)
             if diff >= self.price_change_threshold:
@@ -626,8 +609,6 @@ class Strategy(StrategyBase):
         if self.view:
             self.update_gui_slider()
             self.update_gui_profit()
-
-        self.last_check = datetime.now()
 
     def get_own_last_trade(self):
         """ Returns dict with amounts and price of last trade """

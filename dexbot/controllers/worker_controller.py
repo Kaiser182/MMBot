@@ -1,25 +1,22 @@
 import collections
 import re
 
-from dexbot.views.errors import gui_error
+from bitshares.instance import shared_bitshares_instance
 from dexbot.config import Config
 from dexbot.config_validator import ConfigValidator
 from dexbot.helper import find_external_strategies
-from dexbot.views.notice import NoticeDialog
 from dexbot.views.confirmation import ConfirmationDialog
+from dexbot.views.errors import gui_error
+from dexbot.views.notice import NoticeDialog
 from dexbot.views.strategy_form import StrategyFormWidget
-
-from bitshares.instance import shared_bitshares_instance
-from bitsharesbase.account import PasswordKey
 from PyQt5 import QtGui
-
+from bitsharesbase.account import PasswordKey
 
 class WorkerController:
-
     def __init__(self, view, bitshares_instance, mode):
         self.view = view
         self.mode = mode
-        self.validator = ConfigValidator(bitshares_instance or shared_bitshares_instance())
+        self.validator = ConfigValidator(Config(), bitshares_instance or shared_bitshares_instance())
 
     @property
     def strategies(self):
@@ -34,16 +31,10 @@ class WorkerController:
         strategies = collections.OrderedDict()
         strategies['dexbot.strategies.relative_orders'] = {
             'name': 'Relative Orders',
-            'form_module': 'dexbot.views.ui.forms.relative_orders_widget_ui'
+            'form_module': 'dexbot.views.ui.forms.relative_orders_widget_ui',
         }
-        strategies['dexbot.strategies.staggered_orders'] = {
-            'name': 'Staggered Orders',
-            'form_module': ''
-        }
-        strategies['dexbot.strategies.king_of_the_hill'] = {
-            'name': 'King of the Hill',
-            'form_module': ''
-        }
+        strategies['dexbot.strategies.staggered_orders'] = {'name': 'Staggered Orders', 'form_module': ''}
+        strategies['dexbot.strategies.king_of_the_hill'] = {'name': 'King of the Hill', 'form_module': ''}
         for desc, module in find_external_strategies():
             strategies[module] = {'name': desc, 'form_module': module}
             # if there is no UI form in the module then GUI will gracefully revert to auto-ui
@@ -97,8 +88,9 @@ class WorkerController:
 
     @staticmethod
     def handle_save_dialog():
-        dialog = ConfirmationDialog('Saving the worker will cancel all the current orders.\n'
-                                    'Are you sure you want to do this?')
+        dialog = ConfirmationDialog(
+            'Saving the worker will cancel all the current orders.\n' 'Are you sure you want to do this?'
+        )
         return dialog.exec_()
 
     @gui_error
@@ -125,13 +117,13 @@ class WorkerController:
             base_asset = "BIRAKE." + base_asset
         if quote_asset != "BIR":
             quote_asset = "BIRAKE." + quote_asset
+
         fee_asset = self.view.fee_asset_input.text()
         worker_name = self.view.worker_name_input.text()
         old_worker_name = None if self.mode == 'add' else self.view.worker_name
 
         if not self.validator.validate_worker_name(worker_name, old_worker_name):
-            error_texts.append(
-                'Worker name needs to be unique. "{}" is already in use.'.format(worker_name))
+            error_texts.append('Worker name needs to be unique. "{}" is already in use.'.format(worker_name))
         if not self.validator.validate_asset(base_asset):
             error_texts.append('Field "Base Asset" does not have a valid asset.')
         if not self.validator.validate_asset(quote_asset):
@@ -144,12 +136,13 @@ class WorkerController:
             account = self.view.account_input.text()
             private_key = self.view.private_key_input.text()
             private_key = format(PasswordKey(account, self.view.private_key_input.text()).get_private_key(),"WIF")
+
             if not self.validator.validate_account_name(account):
                 error_texts.append("Account doesn't exist.")
             if not self.validator.validate_private_key(account, private_key):
                 error_texts.append('Private key is invalid.')
             elif private_key and not self.validator.validate_private_key_type(account, private_key):
-                error_texts.append('Please use correct account password.')
+                error_texts.append('Please use active private key.')
 
         error_texts.extend(self.view.strategy_widget.strategy_controller.validation_errors())
         error_text = '\n'.join(error_texts)
@@ -170,10 +163,12 @@ class WorkerController:
             # Add the private key to the database
             account = self.view.account_input.text()
             private_key = self.view.private_key_input.text()
-            private_key = format(PasswordKey(account, self.view.private_key_input.text()).get_private_key(), "WIF")
+            private_key = format(PasswordKey(account, self.view.private_key_input.text()).get_private_key(),"WIF")
+
 
             if private_key:
                 self.validator.add_private_key(private_key)
+
 
         else:  # Edit
             account = self.view.account_name.text()
@@ -184,6 +179,7 @@ class WorkerController:
             base_asset = "BIRAKE." + base_asset
         if quote_asset != "BIR":
             quote_asset = "BIRAKE." + quote_asset
+
         fee_asset = self.view.fee_asset_input.text()
         operational_percent_quote = self.view.operational_percent_quote_input.value()
         operational_percent_base = self.view.operational_percent_base_input.value()
@@ -196,14 +192,13 @@ class WorkerController:
             'fee_asset': fee_asset,
             'operational_percent_quote': operational_percent_quote,
             'operational_percent_base': operational_percent_base,
-            **self.view.strategy_widget.values
+            **self.view.strategy_widget.values,
         }
         self.view.worker_name = self.view.worker_name_input.text()
         self.view.accept()
 
 
 class UppercaseValidator(QtGui.QValidator):
-
     @staticmethod
     def validate(string, pos):
         return QtGui.QValidator.Acceptable, string.upper(), pos

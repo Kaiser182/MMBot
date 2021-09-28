@@ -40,6 +40,7 @@ class Strategy(StrategyBase):
 
         NOTE: Change this comment section to describe the strategy.
     """
+
     @classmethod
     def configure(cls, return_base_config=True):
         return StrategyConfig.configure(return_base_config)
@@ -126,7 +127,7 @@ class Strategy(StrategyBase):
 
     def error(self, *args, **kwargs):
         """ Defines what happens when error occurs """
-        self.disabled = False
+        self.disabled = True
 
     def pause(self):
         """ Override pause() in StrategyBase """

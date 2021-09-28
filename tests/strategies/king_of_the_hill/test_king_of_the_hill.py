@@ -1,6 +1,6 @@
 import logging
-import pytest
 
+import pytest
 
 log = logging.getLogger("dexbot")
 log.setLevel(logging.DEBUG)
@@ -42,6 +42,16 @@ def test_get_top_prices(other_orders, worker):
     assert pytest.approx(worker.top_sell_price) == top_price_ask
 
 
+def test_get_top_prices_margin_call(worker_bitasset):
+    worker = worker_bitasset
+    worker.get_top_prices()
+    call_order = worker.get_cumulative_call_order(worker.debt_asset)
+    if worker.debt_asset == worker.market['base']:
+        assert worker.top_sell_price == call_order['price'] ** -1
+    elif worker.debt_asset == worker.market['quote']:
+        assert worker.top_buy_price == call_order['price']
+
+
 def test_place_order_correct_price(worker, other_orders):
     """ Test that buy order is placed at correct price. Similar to test_get_top_prices(), but with actual order
         placement
@@ -71,12 +81,12 @@ def test_place_order_correct_price(worker, other_orders):
 def test_place_order_zero_price(worker):
     """ Check that worker goes into error if no prices are calculated
     """
-    worker.sell_price = 0
+    worker.top_sell_price = 0
     worker.place_order('sell')
     assert worker.disabled
 
     worker.disabled = False
-    worker.buy_price = 0
+    worker.top_buy_price = 0
     worker.place_order('buy')
     assert worker.disabled
 
@@ -91,6 +101,13 @@ def test_place_order_zero_amount(worker, other_orders, monkeypatch):
 
     monkeypatch.setattr(worker.__class__, 'amount_base', 0)
     assert worker.place_order('buy') is False
+
+    # Test other modes too
+    worker.mode = 'buy'
+    assert worker.place_order('buy') is False
+
+    worker.mode = 'sell'
+    assert worker.place_order('sell') is False
 
 
 def test_place_orders(worker2, other_orders):
@@ -293,3 +310,26 @@ def test_zero_spread(worker, other_orders_zero_spread):
     # Own orders not partially filled
     for order in worker.own_orders:
         assert order['base']['amount'] == order['for_sale']['amount']
+
+
+def test_check_bitasset_market_non_bitasset(worker):
+    """ Worker market is not MPA/COLLATERAL
+    """
+    worker.check_bitasset_market()
+    assert worker.call_orders_expected is False
+
+
+def test_check_bitasset_market_bitasset(worker_bitasset):
+    """ Correctly determine if worker market is MPA/COLLATERAL
+    """
+    worker = worker_bitasset
+    worker.check_bitasset_market()
+    assert worker.call_orders_expected is True
+
+
+def test_get_cumulative_call_order(worker_bitasset):
+    worker = worker_bitasset
+    call_order = worker.get_cumulative_call_order(worker.debt_asset)
+    assert call_order['base']['amount'] > 0
+    assert call_order['quote']['amount'] > 0
+    assert call_order['price'] > 0

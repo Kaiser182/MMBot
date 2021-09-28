@@ -14,33 +14,24 @@ for each strategy class.
 """
 
 import importlib
-import pathlib
 import os
 import os.path
-import sys
+import pathlib
 import re
 import subprocess
-
-from bitshares.account import Account
-
-from dexbot.whiptail import get_whiptail
-from dexbot.strategies.base import StrategyBase
-from dexbot.config_validator import ConfigValidator
-from dexbot.node_manager import get_sorted_nodelist
+import sys
 
 import dexbot.helper
-
+from bitshares.account import Account
+from dexbot.config_validator import ConfigValidator
+from dexbot.node_manager import get_sorted_nodelist
+from dexbot.strategies.base import StrategyBase
+from dexbot.whiptail import get_whiptail
 
 STRATEGIES = [
-    {'tag': 'relative',
-     'class': 'dexbot.strategies.relative_orders',
-     'name': 'Relative Orders'},
-    {'tag': 'stagger',
-     'class': 'dexbot.strategies.staggered_orders',
-     'name': 'Staggered Orders'},
-    {'tag': 'koth',
-     'class': 'dexbot.strategies.king_of_the_hill',
-     'name': 'King of the Hill'},
+    {'tag': 'relative', 'class': 'dexbot.strategies.relative_orders', 'name': 'Relative Orders'},
+    {'tag': 'stagger', 'class': 'dexbot.strategies.staggered_orders', 'name': 'Staggered Orders'},
+    {'tag': 'koth', 'class': 'dexbot.strategies.king_of_the_hill', 'name': 'King of the Hill'},
 ]
 
 # Todo: tags must be unique. Are they really a tags?
@@ -50,13 +41,12 @@ for desc, module in dexbot.helper.find_external_strategies():
     # make sure tag is unique
     i = 1
     while tag in tags_so_far:
-        tag = tag+str(i)
+        tag = tag + str(i)
         i += 1
     tags_so_far.add(tag)
     STRATEGIES.append({'tag': tag, 'class': module, 'name': desc})
 
-SYSTEMD_SERVICE_NAME = os.path.expanduser(
-    "~/.local/share/systemd/user/dexbot.service")
+SYSTEMD_SERVICE_NAME = os.path.expanduser("~/.local/share/systemd/user/dexbot.service")
 
 SYSTEMD_SERVICE_FILE = """
 [Unit]
@@ -78,8 +68,7 @@ WantedBy=default.target
 def select_choice(current, choices):
     """ For the radiolist, get us a list with the current value selected
     """
-    return [(tag, text, (current == tag and "ON") or "OFF")
-            for tag, text in choices]
+    return [(tag, text, (current == tag and "ON") or "OFF") for tag, text in choices]
 
 
 def process_config_element(element, whiptail, worker_config):
@@ -99,9 +88,7 @@ def process_config_element(element, whiptail, worker_config):
         if element.extra:
             while not re.match(element.extra, txt):
                 whiptail.alert("The value is not valid")
-                txt = whiptail.prompt(
-                    title, worker_config.get(
-                        element.key, element.default))
+                txt = whiptail.prompt(title, worker_config.get(element.key, element.default))
         worker_config[element.key] = txt
 
     if element.type == "bool":
@@ -132,8 +119,9 @@ def process_config_element(element, whiptail, worker_config):
         worker_config[element.key] = val
 
     if element.type == "choice":
-        worker_config[element.key] = whiptail.radiolist(title, select_choice(
-            worker_config.get(element.key, element.default), element.extra))
+        worker_config[element.key] = whiptail.radiolist(
+            title, select_choice(worker_config.get(element.key, element.default), element.extra)
+        )
 
 
 def dexbot_service_running():
@@ -156,8 +144,7 @@ def setup_systemd(whiptail, config):
     if not os.path.exists("/etc/systemd"):
         return  # No working systemd
 
-    if not whiptail.confirm(
-            "Do you want to run dexbot as a background (daemon) process?", default="no"):
+    if not whiptail.confirm("Do you want to run dexbot as a background (daemon) process?", default="no"):
         config['systemd_status'] = 'disabled'
         return
 
@@ -173,16 +160,13 @@ def setup_systemd(whiptail, config):
             "The uptick wallet password\n"
             "NOTE: this will be saved on disc so the worker can run unattended. "
             "This means anyone with access to this computer's files can spend all your money",
-            password=True)
+            password=True,
+        )
 
         # Because we hold password be restrictive
         fd = os.open(SYSTEMD_SERVICE_NAME, os.O_WRONLY | os.O_CREAT, 0o600)
         with open(fd, "w") as fp:
-            fp.write(
-                SYSTEMD_SERVICE_FILE.format(
-                    exe=sys.argv[0],
-                    passwd=password,
-                    homedir=os.path.expanduser("~")))
+            fp.write(SYSTEMD_SERVICE_FILE.format(exe=sys.argv[0], passwd=password, homedir=os.path.expanduser("~")))
         # The dexbot service file was edited, reload the daemon configs
         os.system('systemctl --user daemon-reload')
 
@@ -203,12 +187,12 @@ def get_strategy_tag(strategy_class):
     return None
 
 
-def configure_worker(whiptail, worker_config, bitshares_instance):
+def configure_worker(whiptail, worker_config, validator):
     """ Single worker configurator
 
         :param whiptail.Whiptail whiptail: instance of Whiptail or NoWhiptail
-        :param collections.OrderedDict worker_config: the config dictionary for this worker
-        :param bitshares.BitShares bitshares_instance: an instance of Birake class
+        :param collections.OrderedDict worker_config: tohe config dictionary for this worker
+        :param dexbot.config_validator.ConfigValidator validator: dexbot config validator
     """
     # By default always editing
     editing = True
@@ -228,8 +212,7 @@ def configure_worker(whiptail, worker_config, bitshares_instance):
 
     # Strategy selection
     worker_config['module'] = whiptail.radiolist(
-        "Choose a worker strategy",
-        select_choice(default_strategy, strategy_list)
+        "Choose a worker strategy", select_choice(default_strategy, strategy_list)
     )
 
     for strategy in STRATEGIES:
@@ -237,10 +220,7 @@ def configure_worker(whiptail, worker_config, bitshares_instance):
             worker_config['module'] = strategy['class']
 
     # Import the strategy class but we don't __init__ it here
-    strategy_class = getattr(
-        importlib.import_module(worker_config["module"]),
-        'Strategy'
-    )
+    strategy_class = getattr(importlib.import_module(worker_config["module"]), 'Strategy')
 
     # Check if strategy has changed and editing existing worker
     if editing and default_strategy != get_strategy_tag(worker_config['module']):
@@ -269,14 +249,15 @@ def configure_worker(whiptail, worker_config, bitshares_instance):
                 account_name = None
                 # Query user until correct account and key provided
                 while not account_name:
-                    account_name = add_account(whiptail, bitshares_instance)
+                    account_name = add_account(validator, whiptail)
                 worker_config[elem.key] = account_name
             else:  # account name only for edit worker
                 process_config_element(elem, whiptail, worker_config)
     else:
         whiptail.alert(
             "This worker type does not have configuration information. "
-            "You will have to check the worker code and add configuration values to config.yml if required")
+            "You will have to check the worker code and add configuration values to config.yml if required"
+        )
 
     return worker_config
 
@@ -289,7 +270,7 @@ def configure_dexbot(config, ctx):
     whiptail = get_whiptail('DEXBot configure')
     workers = config.get('workers', {})
     bitshares_instance = ctx.bitshares
-    validator = ConfigValidator(bitshares_instance)
+    validator = ConfigValidator(config, bitshares_instance)
 
     if not workers:
         while True:
@@ -297,7 +278,7 @@ def configure_dexbot(config, ctx):
             if len(txt) == 0:
                 whiptail.alert("Worker name cannot be blank. ")
             else:
-                config['workers'] = {txt: configure_worker(whiptail, {}, bitshares_instance)}
+                config['workers'] = {txt: configure_worker(whiptail, {}, validator)}
                 if not whiptail.confirm("Set up another worker?\n(DEXBot can run multiple workers in one instance)"):
                     break
         setup_systemd(whiptail, config)
@@ -305,19 +286,22 @@ def configure_dexbot(config, ctx):
         while True:
             action = whiptail.menu(
                 "You have an existing configuration.\nSelect an action:",
-                [('LIST', 'List your workers'),
-                 ('NEW', 'Create a new worker'),
-                 ('EDIT', 'Edit a worker'),
-                 ('DEL_WORKER', 'Delete a worker'),
-                 ('ADD', 'Add a bitshares account'),
-                 ('DEL_ACCOUNT', 'Delete a bitshares account'),
-                 ('SHOW', 'Show bitshares accounts'),
-                 ('NODES', 'Edit Node Selection'),
-                 ('ADD_NODE', 'Add Your Node'),
-                 ('SORT_NODES', 'By latency (uses default list)'),
-                 ('DEL_NODE', 'Delete A Node'),
-                 ('HELP', 'Where to get help'),
-                 ('EXIT', 'Quit this application')])
+                [
+                    ('LIST', 'List your workers'),
+                    ('NEW', 'Create a new worker'),
+                    ('EDIT', 'Edit a worker'),
+                    ('DEL_WORKER', 'Delete a worker'),
+                    ('ADD', 'Add a bitshares account'),
+                    ('DEL_ACCOUNT', 'Delete a bitshares account'),
+                    ('SHOW', 'Show bitshares accounts'),
+                    ('NODES', 'Edit Node Selection'),
+                    ('ADD_NODE', 'Add Your Node'),
+                    ('SORT_NODES', 'By latency (uses default list)'),
+                    ('DEL_NODE', 'Delete A Node'),
+                    ('HELP', 'Where to get help'),
+                    ('EXIT', 'Quit this application'),
+                ],
+            )
 
             my_workers = [(index, index) for index in workers]
 
@@ -339,8 +323,9 @@ def configure_dexbot(config, ctx):
             elif action == 'EDIT':
                 if len(my_workers):
                     worker_name = whiptail.menu("Select worker to edit", my_workers)
-                    config['workers'][worker_name] = configure_worker(whiptail, config['workers'][worker_name],
-                                                                      bitshares_instance)
+                    config['workers'][worker_name] = configure_worker(
+                        whiptail, config['workers'][worker_name], validator
+                    )
                 else:
                     whiptail.alert('No workers to edit.')
             elif action == 'DEL_WORKER':
@@ -362,7 +347,7 @@ def configure_dexbot(config, ctx):
                 elif not validator.validate_worker_name(worker_name):
                     whiptail.alert('Worker name needs to be unique. "{}" is already in use.'.format(worker_name))
                 else:
-                    config['workers'][worker_name] = configure_worker(whiptail, {}, bitshares_instance)
+                    config['workers'][worker_name] = configure_worker(whiptail, {}, validator)
             elif action == 'ADD':
                 add_account(whiptail, bitshares_instance)
             elif action == 'DEL_ACCOUNT':
@@ -370,7 +355,7 @@ def configure_dexbot(config, ctx):
             elif action == 'SHOW':
                 account_list = list_accounts(bitshares_instance)
                 if account_list:
-                    action = whiptail.menu("Birake Account List (Name - Type)", account_list)
+                    action = whiptail.menu("Bitshares Account List (Name - Type)", account_list)
                 else:
                     whiptail.alert('You do not have any bitshares accounts in the wallet')
             elif action == 'ADD_NODE':
@@ -380,8 +365,8 @@ def configure_dexbot(config, ctx):
             elif action == 'NODES':
                 choice = whiptail.node_radiolist(
                     msg="Choose your preferred node",
-                    items=select_choice(config['node'][0],
-                                        [(index, index) for index in config['node']]))
+                    items=select_choice(config['node'][0], [(index, index) for index in config['node']]),
+                )
                 # Move selected node as first item in the config file's node list
                 config['node'].remove(choice)
                 config['node'].insert(0, choice)
@@ -393,8 +378,8 @@ def configure_dexbot(config, ctx):
             elif action == 'DEL_NODE':
                 choice = whiptail.node_radiolist(
                     msg="Choose node to delete",
-                    items=select_choice(config['node'][0],
-                                        [(index, index) for index in config['node']]))
+                    items=select_choice(config['node'][0], [(index, index) for index in config['node']]),
+                )
                 config['node'].remove(choice)
                 # delete node permanently from config
                 setup_systemd(whiptail, config)
@@ -405,14 +390,13 @@ def configure_dexbot(config, ctx):
     return config
 
 
-def add_account(whiptail, bitshares_instance):
+def add_account(validator, whiptail):
     """ "Add account" dialog
 
+        :param dexbot.config_validator.ConfigValidator validator: dexbot config validator
         :param whiptail.Whiptail whiptail: instance of Whiptail or NoWhiptail
-        :param bitshares.BitShares bitshares_instance: an instance of Birake class
         :return str: user-supplied account name
     """
-    validator = ConfigValidator(bitshares_instance)
 
     account = whiptail.prompt("Your Account Name")
     private_key = whiptail.prompt("Your Private Key", password=True)
@@ -424,7 +408,7 @@ def add_account(whiptail, bitshares_instance):
         whiptail.alert("Private key is invalid")
         return False
     if private_key and not validator.validate_private_key_type(account, private_key):
-        whiptail.alert("Please use correct account password.")
+        whiptail.alert("Please use active private key.")
         return False
 
     # User can supply empty private key if it was added earlier
@@ -439,7 +423,7 @@ def del_account(whiptail, bitshares_instance):
     """ Delete account from the wallet
 
         :param whiptail.Whiptail whiptail: instance of Whiptail or NoWhiptail
-        :param bitshares.BitShares bitshares_instance: an instance of Birake class
+        :param bitshares.BitShares bitshares_instance: an instance of BitShares class
     """
     account = whiptail.prompt("Account Name")
     wallet = bitshares_instance.wallet

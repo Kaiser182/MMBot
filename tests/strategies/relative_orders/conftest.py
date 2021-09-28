@@ -1,8 +1,9 @@
-import pytest
-import time
 import copy
 import logging
 import random
+import time
+
+import pytest
 from dexbot.strategies.base import StrategyBase
 from dexbot.strategies.relative_orders import Strategy
 
@@ -103,7 +104,7 @@ def base_worker(bitshares, ro_worker_name):
 
     def _base_worker(config, worker_name=ro_worker_name):
         worker = Strategy(name=worker_name, config=config, bitshares_instance=bitshares)
-        worker.min_check_interval = 0
+        worker.check_interval = 0
         workers.append(worker)
         return worker
 

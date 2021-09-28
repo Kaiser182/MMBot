@@ -1,11 +1,10 @@
-from .ui.edit_worker_window_ui import Ui_Dialog
-from dexbot.controllers.worker_controller import WorkerController, UppercaseValidator
-
+from dexbot.controllers.worker_controller import UppercaseValidator, WorkerController
 from PyQt5 import QtWidgets
+
+from .ui.edit_worker_window_ui import Ui_Dialog
 
 
 class EditWorkerView(QtWidgets.QDialog, Ui_Dialog):
-
     def __init__(self, parent_widget, bitshares_instance, worker_name, config):
         super().__init__()
         self.worker_name = worker_name
@@ -27,8 +26,11 @@ class EditWorkerView(QtWidgets.QDialog, Ui_Dialog):
         index = self.strategy_input.findData(self.controller.get_strategy_module(worker_data))
         self.strategy_input.setCurrentIndex(index)
         self.worker_name_input.setText(worker_name)
+        #self.base_asset_input.setText(self.controller.get_base_asset(worker_data))
+        #self.quote_asset_input.setText(self.controller.get_quote_asset(worker_data))
         self.base_asset_input.setText(self.controller.get_base_asset(worker_data).replace("BIRAKE.",""))
         self.quote_asset_input.setText(self.controller.get_quote_asset(worker_data).replace("BIRAKE.",""))
+
         self.fee_asset_input.setText(worker_data.get('fee_asset', 'BIR'))
         self.account_name.setText(self.controller.get_account(worker_data))
         self.operational_percent_quote_input.setValue(worker_data.get('operational_percent_quote', 0))

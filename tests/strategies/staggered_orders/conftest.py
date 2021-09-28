@@ -1,12 +1,11 @@
-import pytest
 import copy
-import time
-import tempfile
-import os
 import logging
+import os
+import tempfile
+import time
 
+import pytest
 from bitshares.amount import Amount
-
 from dexbot.strategies.staggered_orders import Strategy
 
 log = logging.getLogger("dexbot")
@@ -412,10 +411,10 @@ def maintain_until_allocated():
     def func(worker):
         # Speed up a little
         worker.min_check_interval = 0.01
-        worker.current_check_interval = worker.min_check_interval
+        worker.check_interval = worker.min_check_interval
         while True:
             worker.maintain_strategy()
-            if not worker.current_check_interval == worker.min_check_interval:
+            if not worker.check_interval == worker.min_check_interval:
                 # Use "if" statement instead of putting this into a "while" to avoid waiting max_check_interval on last
                 # run
                 break
