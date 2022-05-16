@@ -1,9 +1,9 @@
-import os
-import pytest
-import tempfile
 import logging
+import os
+import tempfile
 
-from sqlalchemy import create_engine, Column, String, Integer, Float
+import pytest
+from sqlalchemy import Column, Float, Integer, String, create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
@@ -53,7 +53,7 @@ class Balances(Base):
 def fresh_db():
 
     _, db_file = tempfile.mkstemp()  # noqa: F811
-    _ = DatabaseWorker(sqlite_file=db_file)
+    _ = DatabaseWorker(db_file)
     yield db_file
     os.unlink(db_file)
 

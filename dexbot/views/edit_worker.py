@@ -1,11 +1,11 @@
-from .ui.edit_worker_window_ui import Ui_Dialog
-from dexbot.controllers.worker_controller import WorkerController, UppercaseValidator
-
 from PyQt5 import QtWidgets
+
+from dexbot.controllers.worker_controller import UppercaseValidator, WorkerController
+
+from .ui.edit_worker_window_ui import Ui_Dialog
 
 
 class EditWorkerView(QtWidgets.QDialog, Ui_Dialog):
-
     def __init__(self, parent_widget, bitshares_instance, worker_name, config):
         super().__init__()
         self.worker_name = worker_name

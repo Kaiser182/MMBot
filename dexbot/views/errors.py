@@ -1,16 +1,18 @@
 import logging
 import traceback
 
-from dexbot.ui import translate_error
-from .ui.error_dialog_ui import Ui_Dialog
-from dexbot.qt_queue.idle_queue import idle_add
+from PyQt5 import QtCore, QtWidgets
 
-from PyQt5 import QtWidgets, QtCore
+from dexbot.qt_queue.idle_queue import idle_add
+from dexbot.ui import translate_error
+
+from .ui.error_dialog_ui import Ui_Dialog
 
 
 class PyQtHandler(logging.Handler):
     """
     Logging handler for Py Qt events.
+
     Based on Vinay Sajip's DBHandler class (http://www.red-dove.com/python_logging.html)
     """
 
@@ -44,7 +46,6 @@ class PyQtHandler(logging.Handler):
 
 
 class ErrorDialog(QtWidgets.QDialog, Ui_Dialog):
-
     def __init__(self, title, message, extra=None, detail=None):
         super().__init__()
         self.setupUi(self)
@@ -89,11 +90,12 @@ class ErrorDialog(QtWidgets.QDialog, Ui_Dialog):
 def gui_error(func):
     """ A decorator for GUI handler functions - traps all exceptions and displays the dialog
     """
+
     def func_wrapper(*args, **kwargs):
         try:
             return func(*args, **kwargs)
         except BaseException as exc:
-            show_dialog("DEXBot Error", "An error occurred with DEXBot: \n"+repr(exc), None, traceback.format_exc())
+            show_dialog("DEXBot Error", "An error occurred with DEXBot: \n" + repr(exc), None, traceback.format_exc())
 
     return func_wrapper
 

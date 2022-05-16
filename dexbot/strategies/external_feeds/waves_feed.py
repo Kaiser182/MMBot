@@ -1,6 +1,8 @@
-import dexbot.strategies.external_feeds.process_pair
-import requests
 import asyncio
+
+import requests
+
+import dexbot.strategies.external_feeds.process_pair
 
 WAVES_URL = 'https://marketdata.wavesplatform.com/api/'
 SYMBOLS_URL = "/symbols"

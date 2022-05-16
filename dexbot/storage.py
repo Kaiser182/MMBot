@@ -1,27 +1,24 @@
+import json
 import os
 import os.path
-import sys
-import json
-import threading
 import queue
+import sys
+import threading
 import uuid
+from typing import Any
+
 import alembic
 import alembic.config
-
 from appdirs import user_data_dir
+from sqlalchemy import Boolean, Column, Float, Integer, String, create_engine
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import load_only, sessionmaker
 
-from . import helper
 from dexbot import APP_NAME, AUTHOR
 
-from sqlalchemy import create_engine, Column, String, Integer, Float, Boolean
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, load_only
+from . import helper
 
-
-Base = declarative_base()
-
-# For dexbot.sqlite file
-storageDatabase = "dexbot.sqlite"
+Base: Any = declarative_base()
 
 
 class Config(Base):
@@ -81,138 +78,165 @@ class Balances(Base):
 
 
 class Storage(dict):
-    """ Storage class
+    """
+    Storage class.
 
-        :param string category: The category to distinguish
-                                different storage namespaces
+        Storage can be instantiated with custom database path. For each db file single DatabaseWorker instance is used.
+        This allows threadsafe db access from multiple threads.
     """
 
-    def __init__(self, category):
+    # For each database path as key, we're keeping DatabaseWorker instance as value
+    __db_workers = {}
+
+    def __init__(self, category, db_file=None):
+        """
+        :param string category: The category to distinguish
+                                different storage namespaces
+        :param str db_file: path to sqlite database file
+        """
         self.category = category
 
+        db_file = db_file or self.get_default_db_file()
+        path = os.path.abspath(db_file)
+        # Get or create DatabaseWorker instance
+        self.db_worker = self.__db_workers.setdefault(path, DatabaseWorker(path))
+
+    @staticmethod
+    def get_default_db_file():
+        filename = "dexbot.sqlite"
+
+        # Derive sqlite file directory
+        data_dir = user_data_dir(APP_NAME, AUTHOR)
+        db_file = os.path.join(data_dir, filename)
+
+        # Create directory for sqlite file
+        helper.mkdir(data_dir)
+
+        return db_file
+
     def __setitem__(self, key, value):
-        db_worker.set_item(self.category, key, value)
+        self.db_worker.set_item(self.category, key, value)
 
     def __getitem__(self, key):
-        return db_worker.get_item(self.category, key)
+        return self.db_worker.get_item(self.category, key)
 
     def __delitem__(self, key):
-        db_worker.del_item(self.category, key)
+        self.db_worker.del_item(self.category, key)
 
     def __contains__(self, key):
-        return db_worker.contains(self.category, key)
+        return self.db_worker.contains(self.category, key)
 
     def items(self):
-        return db_worker.get_items(self.category)
+        return self.db_worker.get_items(self.category)
 
     def clear(self):
-        db_worker.clear(self.category)
+        self.db_worker.clear(self.category)
 
     def save_order(self, order):
-        """ Save the order to the database
-        """
+        """Save the order to the database."""
         order_id = order['id']
-        db_worker.save_order(self.category, order_id, order)
+        self.db_worker.save_order(self.category, order_id, order)
 
     def save_order_extended(self, order, virtual=None, custom=None):
-        """ Save the order to the database providing additional data
+        """
+        Save the order to the database providing additional data.
 
-            :param dict order:
-            :param bool virtual: True = order is virtual order
-            :param str custom: any additional data
+        :param dict order:
+        :param bool virtual: True = order is virtual order
+        :param str custom: any additional data
         """
         order_id = order['id']
-        db_worker.save_order_extended(self.category, order_id, order, virtual, custom)
+        self.db_worker.save_order_extended(self.category, order_id, order, virtual, custom)
 
     def remove_order(self, order):
-        """ Removes an order from the database
+        """
+        Removes an order from the database.
 
-            :param dict,str order: order to remove, could be an Order instance or just order id
+        :param dict,str order: order to remove, could be an Order instance or just order id
         """
         if isinstance(order, dict):
             order_id = order['id']
         else:
             order_id = order
-        db_worker.remove_order(self.category, order_id)
+        self.db_worker.remove_order(self.category, order_id)
 
     def clear_orders(self):
         """ Removes all worker's orders from the database
         """
-        db_worker.clear_orders(self.category)
+        self.db_worker.clear_orders(self.category)
 
     def clear_orders_extended(self, worker=None, only_virtual=False, only_real=False, custom=None):
-        """ Removes worker's orders matching a criteria from the database
+        """
+        Removes worker's orders matching a criteria from the database.
 
-            :param str worker: worker name (None means current worker name will be used)
-            :param bool only_virtual: True = only virtual orders
-            :param bool only_real: True = only real orders
-            :param str custom: filter orders by custom field
+        :param str worker: worker name (None means current worker name will be used)
+        :param bool only_virtual: True = only virtual orders
+        :param bool only_real: True = only real orders
+        :param str custom: filter orders by custom field
         """
         if only_virtual and only_real:
             raise ValueError('only_virtual and only_real are mutually exclusive')
         if not worker:
             worker = self.category
-        return db_worker.clear_orders_extended(worker, only_virtual, only_real, custom)
+        return self.db_worker.clear_orders_extended(worker, only_virtual, only_real, custom)
 
     def fetch_orders(self, worker=None):
-        """ Get all the orders (or just specific worker's orders) from the database
+        """
+        Get all the orders (or just specific worker's orders) from the database.
 
-            :param str worker: worker name (None means current worker name will be used)
+        :param str worker: worker name (None means current worker name will be used)
         """
         if not worker:
             worker = self.category
-        return db_worker.fetch_orders(worker)
+        return self.db_worker.fetch_orders(worker)
 
     def fetch_orders_extended(
         self, worker=None, only_virtual=False, only_real=False, custom=None, return_ids_only=False
     ):
-        """ Get orders from the database in extended format (returning all columns)
+        """
+        Get orders from the database in extended format (returning all columns)
 
-            :param str worker: worker name (None means current worker name will be used)
-            :param bool only_virtual: True = fetch only virtual orders
-            :param bool only_real: True = fetch only real orders
-            :param str custom: filter orders by custom field
-            :param bool return_ids_only: instead of returning full row data, return only order ids
-            :rtype: list
-            :return: list of dicts in format [{order_id: '', order: '', virtual: '', custom: ''}], or [order_id] if
-                return_ids_only used
+        :param str worker: worker name (None means current worker name will be used)
+        :param bool only_virtual: True = fetch only virtual orders
+        :param bool only_real: True = fetch only real orders
+        :param str custom: filter orders by custom field
+        :param bool return_ids_only: instead of returning full row data, return only order ids
+        :rtype: list
+        :return: list of dicts in format [{order_id: '', order: '', virtual: '', custom: ''}], or [order_id] if
+            return_ids_only used
         """
         if only_virtual and only_real:
             raise ValueError('only_virtual and only_real are mutually exclusive')
         if not worker:
             worker = self.category
-        return db_worker.fetch_orders_extended(worker, only_virtual, only_real, custom, return_ids_only)
+        return self.db_worker.fetch_orders_extended(worker, only_virtual, only_real, custom, return_ids_only)
 
-    @staticmethod
-    def clear_worker_data(worker):
-        db_worker.clear_orders(worker)
-        db_worker.clear(worker)
+    def clear_worker_data(self):
+        self.db_worker.clear_orders(self.category)
+        self.db_worker.clear(self.category)
 
-    @staticmethod
     def store_balance_entry(
-        account, worker, base_total, base_symbol, quote_total, quote_symbol, center_price, timestamp
+        self, account, worker, base_total, base_symbol, quote_total, quote_symbol, center_price, timestamp
     ):
         balance = Balances(account, worker, base_total, base_symbol, quote_total, quote_symbol, center_price, timestamp)
         # Save balance to db
-        db_worker.save_balance(balance)
+        self.db_worker.save_balance(balance)
 
-    @staticmethod
-    def get_balance_history(account, worker, timestamp, base_asset, quote_asset):
-        return db_worker.get_balance(account, worker, timestamp, base_asset, quote_asset)
+    def get_balance_history(self, account, worker, timestamp, base_asset, quote_asset):
+        return self.db_worker.get_balance(account, worker, timestamp, base_asset, quote_asset)
 
-    @staticmethod
-    def get_recent_balance_entry(account, worker, base_asset, quote_asset):
-        return db_worker.get_recent_balance_entry(account, worker, base_asset, quote_asset)
+    def get_recent_balance_entry(self, account, worker, base_asset, quote_asset):
+        return self.db_worker.get_recent_balance_entry(account, worker, base_asset, quote_asset)
 
 
 class DatabaseWorker(threading.Thread):
-    """ Thread safe database worker
-    """
+    """Thread safe database worker."""
 
-    def __init__(self, **kwargs):
+    def __init__(self, sqlite_file, **kwargs):
+        """
+        :param str sqlite_file: path to sqlite database file
+        """
         super().__init__()
-
-        sqlite_file = kwargs.get('sqlite_file', sqlDataBaseFile)
 
         # Obtain engine and session
         dsn = 'sqlite:///{}'.format(sqlite_file)
@@ -227,6 +251,7 @@ class DatabaseWorker(threading.Thread):
             migrations_dir = os.path.join(bundle_dir, 'migrations')
         else:
             from pkg_resources import resource_filename
+
             migrations_dir = resource_filename('dexbot', 'migrations')
 
         if os.path.exists(sqlite_file) and os.path.getsize(sqlite_file) > 0:
@@ -248,11 +273,12 @@ class DatabaseWorker(threading.Thread):
 
     @staticmethod
     def run_migrations(script_location, dsn, stamp_only=False):
-        """ Apply database migrations using alembic
+        """
+        Apply database migrations using alembic.
 
-            :param str script_location: path to migration scripts
-            :param str dsn: database URL
-            :param bool stamp_only: True = only mark the db as "head" without applying migrations
+        :param str script_location: path to migration scripts
+        :param str dsn: database URL
+        :param bool stamp_only: True = only mark the db as "head" without applying migrations
         """
         alembic_cfg = alembic.config.Config()
         alembic_cfg.set_main_option('script_location', script_location)
@@ -266,8 +292,7 @@ class DatabaseWorker(threading.Thread):
 
     @staticmethod
     def get_filter_by(worker, only_virtual, only_real, custom):
-        """ Make filter_by for sqlalchemy query based on args
-        """
+        """Make filter_by for sqlalchemy query based on args."""
         filter_by = {'worker': worker}
         if only_virtual:
             filter_by['virtual'] = True
@@ -464,8 +489,7 @@ class DatabaseWorker(threading.Thread):
         return self.execute(self._get_balance, account, worker, timestamp, base_asset, quote_asset)
 
     def _get_balance(self, account, worker, timestamp, base_asset, quote_asset, token):
-        """ Get first item that has bigger time as given timestamp and matches account and worker name
-        """
+        """Get first item that has bigger time as given timestamp and matches account and worker name."""
         result = (
             self.session.query(Balances)
             .filter(
@@ -484,8 +508,7 @@ class DatabaseWorker(threading.Thread):
         return self.execute(self._get_recent_balance_entry, account, worker, base_asset, quote_asset)
 
     def _get_recent_balance_entry(self, account, worker, base_asset, quote_asset, token):
-        """ Get most recent balance history item that matches account and worker name
-        """
+        """Get most recent balance history item that matches account and worker name."""
         result = (
             self.session.query(Balances)
             .filter(
@@ -499,13 +522,3 @@ class DatabaseWorker(threading.Thread):
         )
 
         self._set_result(token, result)
-
-
-# Derive sqlite file directory
-data_dir = user_data_dir(APP_NAME, AUTHOR)
-sqlDataBaseFile = os.path.join(data_dir, storageDatabase)
-
-# Create directory for sqlite file
-helper.mkdir(data_dir)
-
-db_worker = DatabaseWorker()

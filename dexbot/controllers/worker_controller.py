@@ -1,48 +1,42 @@
 import collections
 import re
 
-from dexbot.views.errors import gui_error
-from dexbot.config import Config
-from dexbot.config_validator import ConfigValidator
-from dexbot.helper import find_external_strategies
-from dexbot.views.notice import NoticeDialog
-from dexbot.views.confirmation import ConfirmationDialog
-from dexbot.views.strategy_form import StrategyFormWidget
-
 from bitshares.instance import shared_bitshares_instance
 from PyQt5 import QtGui
 
+from dexbot.config import Config
+from dexbot.config_validator import ConfigValidator
+from dexbot.helper import find_external_strategies
+from dexbot.views.confirmation import ConfirmationDialog
+from dexbot.views.errors import gui_error
+from dexbot.views.notice import NoticeDialog
+from dexbot.views.strategy_form import StrategyFormWidget
+
 
 class WorkerController:
-
     def __init__(self, view, bitshares_instance, mode):
         self.view = view
         self.mode = mode
-        self.validator = ConfigValidator(bitshares_instance or shared_bitshares_instance())
+        self.validator = ConfigValidator(Config(), bitshares_instance or shared_bitshares_instance())
 
     @property
     def strategies(self):
-        """ Defines strategies that are configurable from the GUI.
+        """
+        Defines strategies that are configurable from the GUI.
 
-            key: Strategy location in the project
-            name: The name that is shown in the GUI for user
-            form_module: If there is custom form module created with QTDesigner
+        key: Strategy location in the project
+        name: The name that is shown in the GUI for user
+        form_module: If there is custom form module created with QTDesigner
 
-            :return: List of strategies
+        :return: List of strategies
         """
         strategies = collections.OrderedDict()
         strategies['dexbot.strategies.relative_orders'] = {
             'name': 'Relative Orders',
-            'form_module': 'dexbot.views.ui.forms.relative_orders_widget_ui'
+            'form_module': 'dexbot.views.ui.forms.relative_orders_widget_ui',
         }
-        strategies['dexbot.strategies.staggered_orders'] = {
-            'name': 'Staggered Orders',
-            'form_module': ''
-        }
-        strategies['dexbot.strategies.king_of_the_hill'] = {
-            'name': 'King of the Hill',
-            'form_module': ''
-        }
+        strategies['dexbot.strategies.staggered_orders'] = {'name': 'Staggered Orders', 'form_module': ''}
+        strategies['dexbot.strategies.king_of_the_hill'] = {'name': 'King of the Hill', 'form_module': ''}
         for desc, module in find_external_strategies():
             strategies[module] = {'name': desc, 'form_module': module}
             # if there is no UI form in the module then GUI will gracefully revert to auto-ui
@@ -50,14 +44,15 @@ class WorkerController:
 
     @classmethod
     def get_strategies(cls):
-        """ Class method for getting the strategies
-        """
+        """Class method for getting the strategies."""
         return cls(None, None, None).strategies
 
     @staticmethod
     def get_unique_worker_name():
-        """ Returns unique worker name "Worker %n"
-            %n is the next available index
+        """
+        Returns unique worker name "Worker %n".
+
+        %n is the next available index
         """
         index = 1
         workers = Config().workers_data.keys()
@@ -96,8 +91,9 @@ class WorkerController:
 
     @staticmethod
     def handle_save_dialog():
-        dialog = ConfirmationDialog('Saving the worker will cancel all the current orders.\n'
-                                    'Are you sure you want to do this?')
+        dialog = ConfirmationDialog(
+            'Saving the worker will cancel all the current orders.\n' 'Are you sure you want to do this?'
+        )
         return dialog.exec_()
 
     @gui_error
@@ -125,8 +121,7 @@ class WorkerController:
         old_worker_name = None if self.mode == 'add' else self.view.worker_name
 
         if not self.validator.validate_worker_name(worker_name, old_worker_name):
-            error_texts.append(
-                'Worker name needs to be unique. "{}" is already in use.'.format(worker_name))
+            error_texts.append('Worker name needs to be unique. "{}" is already in use.'.format(worker_name))
         if not self.validator.validate_asset(base_asset):
             error_texts.append('Field "Base Asset" does not have a valid asset.')
         if not self.validator.validate_asset(quote_asset):
@@ -185,14 +180,13 @@ class WorkerController:
             'fee_asset': fee_asset,
             'operational_percent_quote': operational_percent_quote,
             'operational_percent_base': operational_percent_base,
-            **self.view.strategy_widget.values
+            **self.view.strategy_widget.values,
         }
         self.view.worker_name = self.view.worker_name_input.text()
         self.view.accept()
 
 
 class UppercaseValidator(QtGui.QValidator):
-
     @staticmethod
     def validate(string, pos):
         return QtGui.QValidator.Acceptable, string.upper(), pos

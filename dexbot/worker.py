@@ -1,15 +1,16 @@
+import copy
 import importlib
-import sys
 import logging
 import os.path
+import sys
 import threading
-import copy
+
+from bitshares.instance import shared_bitshares_instance
+from bitshares.notify import Notify
+from bitshares.utils import parse_time
 
 import dexbot.errors as errors
 from dexbot.strategies.base import StrategyBase
-
-from bitshares.notify import Notify
-from bitshares.instance import shared_bitshares_instance
 
 log = logging.getLogger(__name__)
 log_workers = logging.getLogger('dexbot.per_worker')
@@ -20,17 +21,12 @@ log_workers = logging.getLogger('dexbot.per_worker')
 
 
 class WorkerInfrastructure(threading.Thread):
-
-    def __init__(
-        self,
-        config,
-        bitshares_instance=None,
-        view=None
-    ):
+    def __init__(self, config, bitshares_instance=None, view=None):
         super().__init__()
 
         # BitShares instance
         self.bitshares = bitshares_instance or shared_bitshares_instance()
+        self.block_time = None
         self.config = copy.deepcopy(config)
         self.view = view
         self.jobs = set()
@@ -47,40 +43,48 @@ class WorkerInfrastructure(threading.Thread):
             sys.path.append(user_worker_path)
 
     def init_workers(self, config):
-        """ Initialize the workers
-        """
+        """Initialize the workers."""
         self.config_lock.acquire()
         for worker_name, worker in config["workers"].items():
             if "account" not in worker:
-                log_workers.critical("Worker has no account", extra={
-                    'worker_name': worker_name, 'account': 'unknown',
-                    'market': 'unknown', 'is_disabled': (lambda: True)
-                })
+                log_workers.critical(
+                    "Worker has no account",
+                    extra={
+                        'worker_name': worker_name,
+                        'account': 'unknown',
+                        'market': 'unknown',
+                        'is_disabled': (lambda: True),
+                    },
+                )
                 continue
             if "market" not in worker:
-                log_workers.critical("Worker has no market", extra={
-                    'worker_name': worker_name, 'account': worker['account'],
-                    'market': 'unknown', 'is_disabled': (lambda: True)
-                })
+                log_workers.critical(
+                    "Worker has no market",
+                    extra={
+                        'worker_name': worker_name,
+                        'account': worker['account'],
+                        'market': 'unknown',
+                        'is_disabled': (lambda: True),
+                    },
+                )
                 continue
             try:
-                strategy_class = getattr(
-                    importlib.import_module(worker["module"]),
-                    'Strategy'
-                )
+                strategy_class = getattr(importlib.import_module(worker["module"]), 'Strategy')
                 self.workers[worker_name] = strategy_class(
-                    config=config,
-                    name=worker_name,
-                    bitshares_instance=self.bitshares,
-                    view=self.view
+                    config=config, name=worker_name, bitshares_instance=self.bitshares, view=self.view
                 )
                 self.markets.add(worker['market'])
                 self.accounts.add(worker['account'])
             except BaseException:
-                log_workers.exception("Worker initialisation", extra={
-                    'worker_name': worker_name, 'account': worker['account'],
-                    'market': 'unknown', 'is_disabled': (lambda: True)
-                })
+                log_workers.exception(
+                    "Worker initialisation",
+                    extra={
+                        'worker_name': worker_name,
+                        'account': worker['account'],
+                        'market': 'unknown',
+                        'is_disabled': (lambda: True),
+                    },
+                )
         self.config_lock.release()
 
     def update_notify(self):
@@ -101,7 +105,7 @@ class WorkerInfrastructure(threading.Thread):
                 on_market=self.on_market,
                 on_account=self.on_account,
                 on_block=self.on_block,
-                bitshares_instance=self.bitshares
+                bitshares_instance=self.bitshares,
             )
 
     # Events
@@ -112,6 +116,8 @@ class WorkerInfrastructure(threading.Thread):
                     job()
             finally:
                 self.jobs = set()
+
+        self.check_node_time()
 
         self.config_lock.acquire()
         for worker_name, worker in self.config["workers"].items():
@@ -129,6 +135,8 @@ class WorkerInfrastructure(threading.Thread):
                     self.workers[worker_name].error_ontick(e)
                 except Exception:
                     self.workers[worker_name].log.exception("in error_ontick()")
+            finally:
+                self.bitshares.txbuffer.clear()
         self.config_lock.release()
 
     def on_market(self, data):
@@ -152,6 +160,9 @@ class WorkerInfrastructure(threading.Thread):
                         self.workers[worker_name].error_onMarketUpdate(e)
                     except Exception:
                         self.workers[worker_name].log.exception("in error_onMarketUpdate()")
+                finally:
+                    self.bitshares.txbuffer.clear()
+
         self.config_lock.release()
 
     def on_account(self, account_update):
@@ -173,6 +184,8 @@ class WorkerInfrastructure(threading.Thread):
                         self.workers[worker_name].error_onAccount(e)
                     except Exception:
                         self.workers[worker_name].log.exception("in error_onAccountUpdate()")
+                finally:
+                    self.bitshares.txbuffer.clear()
         self.config_lock.release()
 
     def add_worker(self, worker_name, config):
@@ -186,11 +199,28 @@ class WorkerInfrastructure(threading.Thread):
         self.update_notify()
         self.notify.listen()
 
-    def stop(self, worker_name=None, pause=False):
-        """ Used to stop the worker(s)
+    def check_node_time(self):
+        """Check that we're connected to synced node."""
+        props = self.bitshares.info()
+        current_time = parse_time(props['time'])
 
-            :param str worker_name: name of the worker to stop
-            :param bool pause: optional argument which tells worker if it was stopped or just paused
+        if not self.block_time:
+            self.block_time = current_time
+        elif current_time < self.block_time:
+            current_node = self.bitshares.rpc.url
+            self.bitshares.rpc.next()
+            new_node = self.bitshares.rpc.url
+            log.warning('Current node out of sync, switching: {} -> {}'.format(current_node, new_node))
+            return
+        else:
+            self.block_time = current_time
+
+    def stop(self, worker_name=None, pause=False):
+        """
+        Used to stop the worker(s)
+
+        :param str worker_name: name of the worker to stop
+        :param bool pause: optional argument which tells worker if it was stopped or just paused
         """
         if worker_name:
             try:
@@ -237,8 +267,7 @@ class WorkerInfrastructure(threading.Thread):
                 self.workers[worker].purge()
 
     def remove_market(self, worker_name):
-        """ Remove the market only if the worker is the only one using it
-        """
+        """Remove the market only if the worker is the only one using it."""
         with self.config_lock:
             market = self.config['workers'][worker_name]['market']
             for name, worker in self.config['workers'].items():
@@ -259,5 +288,5 @@ class WorkerInfrastructure(threading.Thread):
         StrategyBase.purge_all_local_worker_data(worker_name)
 
     def do_next_tick(self, job):
-        """ Add a callable to be executed on the next tick """
+        """Add a callable to be executed on the next tick."""
         self.jobs.add(job)

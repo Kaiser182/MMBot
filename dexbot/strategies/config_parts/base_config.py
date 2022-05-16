@@ -47,36 +47,51 @@ DetailElement = collections.namedtuple('DetailTab', 'type name title file')
 
 
 class BaseConfig:
-
     @classmethod
     def configure(cls, return_base_config=True):
-        """ Return a list of ConfigElement objects defining the configuration values for this class.
+        """
+        Return a list of ConfigElement objects defining the configuration values for this class.
 
-            User interfaces should then generate widgets based on these values, gather data and save back to
-            the config dictionary for the worker.
+        User interfaces should then generate widgets based on these values, gather data and save back to
+        the config dictionary for the worker.
 
-            NOTE: When overriding you almost certainly will want to call the ancestor and then
-            add your config values to the list.
+        NOTE: When overriding you almost certainly will want to call the ancestor and then
+        add your config values to the list.
 
-            :param return_base_config: bool:
-            :return: Returns a list of config elements
+        :param return_base_config: bool:
+        :return: Returns a list of config elements
         """
 
         # Common configs
         base_config = [
-            ConfigElement('account', 'string', '', 'Account',
-                          'BitShares account name for the bot to operate with',
-                          ''),
-            ConfigElement('market', 'string', 'BTS/USD', 'Market',
-                          'BitShares market to operate on, in the format QUOTE/BASE, for example \"BTS/USD\"',
-                          r'[A-Z0-9\.]+[:\/][A-Z0-9\.]+'),
-            ConfigElement('fee_asset', 'string', 'BTS', 'Fee asset',
-                          'Asset to be used to pay transaction fees',
-                          r'[A-Z\.]+'),
-            ConfigElement('operational_percent_quote', 'float', 0, 'QUOTE balance %',
-                          'Max % of QUOTE asset available to this worker', (0, None, 2, '%')),
-            ConfigElement('operational_percent_base', 'float', 0, 'BASE balance %',
-                          'Max % of BASE asset available to this worker', (0, None, 2, '%')),
+            ConfigElement('account', 'string', '', 'Account', 'BitShares account name for the bot to operate with', ''),
+            ConfigElement(
+                'market',
+                'string',
+                'BTS/USD',
+                'Market',
+                'BitShares market to operate on, in the format QUOTE/BASE, for example \"BTS/USD\"',
+                r'[A-Z0-9\.]+[:\/][A-Z0-9\.]+',
+            ),
+            ConfigElement(
+                'fee_asset', 'string', 'BTS', 'Fee asset', 'Asset to be used to pay transaction fees', r'[A-Z\.]+'
+            ),
+            ConfigElement(
+                'operational_percent_quote',
+                'float',
+                0,
+                'QUOTE balance %',
+                'Max % of QUOTE asset available to this worker',
+                (0, None, 2, '%'),
+            ),
+            ConfigElement(
+                'operational_percent_base',
+                'float',
+                0,
+                'BASE balance %',
+                'Max % of BASE asset available to this worker',
+                (0, None, 2, '%'),
+            ),
         ]
 
         if return_base_config:
@@ -85,16 +100,17 @@ class BaseConfig:
 
     @classmethod
     def configure_details(cls, include_default_tabs=True):
-        """ Return a list of ConfigElement objects defining the configuration values for this class.
+        """
+        Return a list of ConfigElement objects defining the configuration values for this class.
 
-            User interfaces should then generate widgets based on these values, gather data and save back to
-            the config dictionary for the worker.
+        User interfaces should then generate widgets based on these values, gather data and save back to
+        the config dictionary for the worker.
 
-            NOTE: When overriding you almost certainly will want to call the ancestor and then
-            add your config values to the list.
+        NOTE: When overriding you almost certainly will want to call the ancestor and then
+        add your config values to the list.
 
-            :param include_default_tabs: bool:
-            :return: Returns a list of Detail elements
+        :param include_default_tabs: bool:
+        :return: Returns a list of Detail elements
         """
 
         # Common configs

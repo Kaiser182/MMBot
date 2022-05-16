@@ -1,12 +1,18 @@
 import click
-from dexbot.styles import yellow
+
 from dexbot.strategies.external_feeds.gecko_feed import get_gecko_price
 from dexbot.strategies.external_feeds.process_pair import split_pair
+from dexbot.styles import yellow
 
 
 def print_usage():
-    print("Usage: python3 gecko_feed.py", yellow('[symbol]'),
-          "Symbol is required, for example:", yellow('BTC/USD'), sep='')
+    print(
+        "Usage: python3 gecko_feed.py",
+        yellow('[symbol]'),
+        "Symbol is required, for example:",
+        yellow('BTC/USD'),
+        sep='',
+    )
 
 
 # Unit tests
@@ -18,9 +24,7 @@ def main():
 @main.command()
 @click.argument('symbol')
 def test_feed(symbol):
-    """
-        [symbol]  Symbol example: btc/usd or btc:usd
-    """
+    """[symbol]  Symbol example: btc/usd or btc:usd."""
     try:
         price = get_gecko_price(symbol_=symbol)
         print(price)

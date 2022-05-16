@@ -1,26 +1,25 @@
-from websocket import create_connection as wss_create
-from time import time
-from itertools import repeat
 import logging
 import multiprocessing as mp
-import subprocess
 import platform
+import subprocess
+from itertools import repeat
+from time import time
 
+from websocket import create_connection as wss_create
 
 log = logging.getLogger(__name__)
 
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s %(levelname)s %(message)s'
-)
+logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s')
 
 max_timeout = 2.0  # default ping time is set to 2s. use for internal testing.
 host_ip = '8.8.8.8'  # default host to ping to check internet
 
 
 def ping(host, network_timeout=3):
-    """ Send a ping packet to the specified host, using the system "ping" command.
-        Covers the Windows, Unix and OSX
+    """
+    Send a ping packet to the specified host, using the system "ping" command.
+
+    Covers the Windows, Unix and OSX
     """
     args = ['ping']
     platform_os = platform.system().lower()
@@ -47,12 +46,11 @@ def ping(host, network_timeout=3):
 
 
 def wss_test(node, timeout):
-    """ Test websocket connection to a node
-    """
+    """Test websocket connection to a node."""
     try:
         start = time()
         wss_create(node, timeout=timeout)
-        latency = (time() - start)
+        latency = time() - start
         return latency
     except Exception as e:
         log.info('websocket test: {}'.format(e))
@@ -60,21 +58,19 @@ def wss_test(node, timeout):
 
 
 def check_node(node, timeout):
-    """ Check latency of an individual node
-    """
+    """Check latency of an individual node."""
     log.info('# pinging {}'.format(node))
     latency = wss_test(node, timeout)
     node_info = {'Node': node, 'Latency': latency}
     return node_info
 
 
-def get_sorted_nodelist(nodelist, timeout):
-    """ Check all nodes and poll for latency, eliminate nodes with no response, then sort
-        nodes by increasing latency and return as a list
-    """
+def get_sorted_nodelist(nodelist, timeout=2):
+    """Check all nodes and poll for latency, eliminate nodes with no response, then sort nodes by increasing latency and
+    return as a list."""
 
     print('get_sorted_nodelist max timeout: {}'.format(timeout))
-    pool_size = mp.cpu_count()*2
+    pool_size = mp.cpu_count() * 2
 
     with mp.Pool(processes=pool_size) as pool:
         latency_info = pool.starmap(check_node, zip(nodelist, repeat(timeout)))

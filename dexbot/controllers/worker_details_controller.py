@@ -1,27 +1,25 @@
 import csv
 import os
 
-from PyQt5.QtWidgets import QTableWidgetItem
 from PyQt5.QtGui import QTextCursor
+from PyQt5.QtWidgets import QTableWidgetItem
 
 
 class WorkerDetailsController:
-
     def __init__(self, view, worker_name, config):
-        """ Initializes controller
+        """
+        Initializes controller.
 
-            :param view: WorkerDetailsView
-            :param worker_name: Worker's name
-            :param config: Worker's config
+        :param view: WorkerDetailsView
+        :param worker_name: Worker's name
+        :param config: Worker's config
         """
         self.view = view
         self.worker_name = worker_name
         self.config = config
 
     def initialize_worker_data(self):
-        """ Initializes details view with worker's data
-
-        """
+        """Initializes details view with worker's data."""
         # Worker information
         self.view.worker_name.setText(self.worker_name)
         self.view.worker_account.setText(self.config.get('account'))

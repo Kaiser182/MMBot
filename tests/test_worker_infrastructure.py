@@ -1,6 +1,7 @@
-import threading
 import logging
+import threading
 import time
+
 import pytest
 
 from dexbot.worker import WorkerInfrastructure
@@ -27,8 +28,7 @@ def config(bitshares, account):
 
 @pytest.mark.mandatory
 def test_worker_infrastructure(bitshares, config):
-    """ Test whether dexbot core is able to work
-    """
+    """Test whether dexbot core is able to work."""
     worker_infrastructure = WorkerInfrastructure(config=config, bitshares_instance=bitshares)
 
     def wait_then_stop():

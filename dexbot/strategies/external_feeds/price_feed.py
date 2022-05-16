@@ -2,15 +2,19 @@ import re
 
 from dexbot.strategies.external_feeds.ccxt_feed import get_ccxt_price
 from dexbot.strategies.external_feeds.gecko_feed import get_gecko_price
+from dexbot.strategies.external_feeds.process_pair import (
+    debug,
+    filter_bit_symbol,
+    filter_prefix_symbol,
+    get_consolidated_pair,
+    join_pair,
+    split_pair,
+)
 from dexbot.strategies.external_feeds.waves_feed import get_waves_price
-from dexbot.strategies.external_feeds.process_pair import split_pair, join_pair, filter_prefix_symbol, \
-    filter_bit_symbol, get_consolidated_pair, debug
 
 
 class PriceFeed:
-    """
-    price feed class, which handles all data requests for external center price
-    """
+    """price feed class, which handles all data requests for external center price."""
 
     def __init__(self, exchange, symbol):
         self._alt_exchanges = ['gecko', 'waves']  # assume all other exchanges are ccxt

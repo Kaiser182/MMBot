@@ -1,14 +1,15 @@
 from __future__ import print_function
-import sys
+
+import itertools
+import os
 import shlex
 import shutil
-import itertools
-import click
-import os
+import sys
 import tempfile
-from subprocess import Popen, PIPE
 from collections import namedtuple
+from subprocess import PIPE, Popen
 
+import click
 
 # whiptail.py - Use whiptail to display dialog boxes from shell scripts
 # Copyright (C) 2013 Marwan Alsabbagh
@@ -23,9 +24,7 @@ def flatten(data):
 
 
 class Whiptail:
-
-    def __init__(self, title='', backtitle='', height=20, width=60,
-                 auto_exit=True):
+    def __init__(self, title='', backtitle='', height=20, width=60, auto_exit=True):
         self.title = title
         self.backtitle = backtitle
         self.height = height
@@ -34,8 +33,15 @@ class Whiptail:
 
     def run(self, control, msg, extra=(), exit_on=(1, 255)):
         cmd = [
-            'whiptail', '--title', self.title, '--backtitle', self.backtitle,
-            '--' + control, msg, str(self.height), str(self.width)
+            'whiptail',
+            '--title',
+            self.title,
+            '--backtitle',
+            self.backtitle,
+            '--' + control,
+            msg,
+            str(self.height),
+            str(self.width),
         ]
         cmd += list(extra)
         p = Popen(cmd, stderr=PIPE)
@@ -97,7 +103,7 @@ class Whiptail:
         return self.showlist('checklist', msg, items, prefix)
 
     def view_text(self, text, **kwargs):
-        """Whiptail wants a file but we want to provide a text string"""
+        """Whiptail wants a file but we want to provide a text string."""
         fd, nam = tempfile.mkstemp()
         f = os.fdopen(fd, 'w')
         f.write(text)
@@ -112,10 +118,9 @@ class Whiptail:
 
 class NoWhiptail:
     """
-    Imitates the interface of whiptail but uses click only
+    Imitates the interface of whiptail but uses click only.
 
-    This is very basic CLI: real state-of-the-1970s stuff,
-    but it works *everywhere*
+    This is very basic CLI: real state-of-the-1970s stuff, but it works *everywhere*
     """
 
     def prompt(self, msg, default='', password=False):
@@ -125,11 +130,7 @@ class NoWhiptail:
         return click.confirm(msg, default=(default == 'yes'))
 
     def alert(self, msg):
-        click.echo(
-            "[" +
-            click.style("alert", fg="yellow") +
-            "] " + msg
-        )
+        click.echo("[" + click.style("alert", fg="yellow") + "] " + msg)
 
     def view_text(self, text, pager=True):
         if pager:
@@ -160,8 +161,7 @@ class NoWhiptail:
         return self.menu(msg, [(k, v) for k, v, s in items], default=default)
 
     def node_radiolist(self, *args, **kwargs):
-        """ Proxy stub to maintain compatibility with Whiptail class
-        """
+        """Proxy stub to maintain compatibility with Whiptail class."""
         return self.radiolist(*args, **kwargs)
 
     def clear(self):

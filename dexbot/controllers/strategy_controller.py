@@ -2,8 +2,7 @@ from PyQt5 import QtWidgets
 
 
 class StrategyController:
-    """ Parent controller for strategies that don't have a custom controller
-    """
+    """Parent controller for strategies that don't have a custom controller."""
 
     def __init__(self, view, configure, worker_controller, worker_data):
         self.view = view
@@ -57,8 +56,7 @@ class StrategyController:
 
     @property
     def elements(self):
-        """ Use ConfigElements of the strategy to find the input elements
-        """
+        """Use ConfigElements of the strategy to find the input elements."""
         elements = {}
         types = (
             QtWidgets.QDoubleSpinBox,
@@ -66,7 +64,7 @@ class StrategyController:
             QtWidgets.QLineEdit,
             QtWidgets.QCheckBox,
             QtWidgets.QComboBox,
-            QtWidgets.QSlider
+            QtWidgets.QSlider,
         )
 
         for option in self.configure:
@@ -78,7 +76,6 @@ class StrategyController:
 
 
 class RelativeOrdersController(StrategyController):
-
     def __init__(self, view, configure, worker_controller, worker_data):
         # Check if there is worker data. This prevents error when multiplying None type when creating worker.
         if worker_data:
@@ -254,15 +251,10 @@ class RelativeOrdersController(StrategyController):
 
 
 class StaggeredOrdersController(StrategyController):
-
     def __init__(self, view, configure, worker_controller, worker_data):
         self.view = view
         self.configure = configure
         self.worker_controller = worker_controller
-
-        if view:
-            if not self.view.strategy_widget.center_price_dynamic_input.isChecked():
-                self.view.strategy_widget.center_price_input.setDisabled(False)
 
         super().__init__(view, configure, worker_controller, worker_data)
 
@@ -270,15 +262,25 @@ class StaggeredOrdersController(StrategyController):
 
         # Event connecting
         widget.center_price_dynamic_input.clicked.connect(self.onchange_center_price_dynamic_input)
+        widget.enable_stop_loss_input.clicked.connect(self.onchange_enable_stop_loss_input)
 
         # Trigger the onchange events once
         self.onchange_center_price_dynamic_input(widget.center_price_dynamic_input.isChecked())
+        self.onchange_enable_stop_loss_input(widget.enable_stop_loss_input.isChecked())
 
     def onchange_center_price_dynamic_input(self, checked):
         if checked:
             self.view.strategy_widget.center_price_input.setDisabled(True)
         else:
             self.view.strategy_widget.center_price_input.setDisabled(False)
+
+    def onchange_enable_stop_loss_input(self, checked):
+        if checked:
+            self.view.strategy_widget.stop_loss_discount_input.setDisabled(False)
+            self.view.strategy_widget.stop_loss_amount_input.setDisabled(False)
+        else:
+            self.view.strategy_widget.stop_loss_discount_input.setDisabled(True)
+            self.view.strategy_widget.stop_loss_amount_input.setDisabled(True)
 
     def set_required_base(self, text):
         self.view.strategy_widget.required_base_text.setText(text)
@@ -298,7 +300,6 @@ class StaggeredOrdersController(StrategyController):
 
 
 class KingOfTheHillController(StrategyController):
-
     def __init__(self, view, configure, worker_controller, worker_data):
         self.view = view
         self.configure = configure
